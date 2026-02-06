@@ -1,0 +1,5 @@
+# This directory contains model artifacts
+# Each model gets its own subdirectory with:
+# - config.yaml: Training configuration
+# - model artifacts (weights, vectorizers, etc.)
+# - metrics.json: Validation metrics

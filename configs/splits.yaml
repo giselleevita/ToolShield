@@ -1,0 +1,51 @@
+# Split Generation Configuration
+# ==============================
+# Configuration for creating train/val/test splits.
+
+# Global random seed for split generation
+# Using 2026 as the canonical split seed
+seed: 2026
+
+# Split ratios (approximate, adjusted for template-level assignment)
+split_ratios:
+  train: 0.70  # 70% for training
+  val: 0.15    # 15% for validation
+  test: 0.15   # 15% for testing
+
+# Available split protocols
+protocols:
+  S_random:
+    description: "Stratified random split with no template leakage"
+    stratify_by:
+      - label_binary
+      - attack_family
+    constraints:
+      - "No template_id in multiple splits"
+  
+  S_attack_holdout:
+    description: "Hold out AF4 attack family from training"
+    holdout_family: "AF4"
+    constraints:
+      - "No template_id in multiple splits"
+      - "AF4 only in test set"
+      - "Benign samples in all splits"
+  
+  S_tool_holdout:
+    description: "Hold out exportReport tool from training"
+    holdout_tool: "exportReport"
+    constraints:
+      - "No template_id in multiple splits"
+      - "exportReport only in test set"
+      - "Both benign and attack samples in test for holdout tool"
+
+# Input/output paths
+input:
+  dataset_file: "data/dataset.jsonl"
+
+output:
+  base_dir: "data/splits/"
+  # Splits will be saved as:
+  # - data/splits/{protocol}/train.jsonl
+  # - data/splits/{protocol}/val.jsonl
+  # - data/splits/{protocol}/test.jsonl
+  # - data/splits/{protocol}/manifest.json

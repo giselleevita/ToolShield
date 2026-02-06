@@ -1,0 +1,43 @@
+# Transformer (Text-Only) Configuration
+# =====================================
+# Neural baseline using pretrained transformer with classification head.
+# Input: prompt text only (no context).
+
+model_type: transformer
+
+# Base model from HuggingFace
+# Options: "distilroberta-base", "distilbert-base-uncased"
+model_name: "distilroberta-base"
+
+# Random seed for reproducibility
+seed: 42
+
+# Tokenization parameters
+# -----------------------
+# Maximum sequence length (tokens)
+# DistilRoBERTa max is 512
+max_length: 512
+
+# Training parameters
+# -------------------
+# Batch size for training and evaluation
+batch_size: 16
+
+# Learning rate (typical range: 1e-5 to 5e-5 for fine-tuning)
+learning_rate: 2.0e-5
+
+# Number of training epochs
+num_epochs: 3
+
+# Warmup steps before full learning rate
+warmup_steps: 100
+
+# L2 weight decay for regularization
+weight_decay: 0.01
+
+# Evaluation strategy
+# -------------------
+eval_strategy: "epoch"
+save_strategy: "epoch"
+load_best_model_at_end: true
+metric_for_best_model: "roc_auc"

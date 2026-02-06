@@ -1,0 +1,4 @@
+# This directory contains generated data
+# - dataset.jsonl: Full generated dataset
+# - manifest.json: Dataset statistics
+# - splits/: Train/val/test splits for each protocol

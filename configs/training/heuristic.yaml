@@ -1,0 +1,88 @@
+# Heuristic Classifier Configuration
+# ===================================
+# Rule-based baseline using keyword matching and patterns.
+
+model_type: heuristic
+
+# Case sensitivity for keyword matching
+case_sensitive: false
+
+# Suspicious keywords that may indicate injection attempts
+# These are the default keywords; customize as needed
+suspicious_keywords:
+  # Instruction override patterns
+  - "ignore"
+  - "ignore previous"
+  - "ignore all"
+  - "disregard"
+  - "forget"
+  - "override"
+  - "bypass"
+  - "skip"
+  - "instead"
+  - "actually"
+  - "new instructions"
+  - "new directive"
+  - "system override"
+  - "admin mode"
+  - "maintenance mode"
+  - "debug mode"
+  - "elevated privileges"
+  # Jailbreak patterns
+  - "dan"
+  - "do anything now"
+  - "unrestricted"
+  - "no restrictions"
+  - "pretend"
+  - "roleplay"
+  - "hypothetical"
+  - "for testing"
+  # Exfiltration patterns
+  - "send to"
+  - "send a copy"
+  - "forward to"
+  - "email to"
+  - "post to"
+  - "webhook"
+  - "external"
+  - "mirror"
+  - "transmit"
+  # Tool hijacking patterns
+  - "instead of"
+  - "change to"
+  - "switch to"
+  - "redirect to"
+  - "call instead"
+  - "reset mfa"
+  - "resetusermfa"
+  # Indirect injection markers
+  - "system note"
+  - "internal"
+  - "admin flag"
+  - "escalation"
+  - "auto-approve"
+  - "hidden"
+
+# Regex patterns for structural indicators
+suspicious_patterns:
+  - "\\[\\[.*ADMIN.*\\]\\]"  # [[ADMIN: ...]]
+  - "\\{\\{.*SYSTEM.*\\}\\}"  # {{SYSTEM: ...}}
+  - "<<<.*>>>"  # <<<...>>>
+  - "---END.*---"  # ---END OF SYSTEM PROMPT---
+  - "BEGIN.*COMMAND"  # BEGIN SYSTEM COMMAND
+  - "\\[INTERNAL\\]"  # [INTERNAL]
+  - "\\[PRIORITY\\s*OVERRIDE\\]"
+  - "<!--.*-->"  # HTML comments with instructions
+  - "auth_level\\s*=\\s*admin"
+  - "restrictions\\s*=\\s*none"
+
+# Allowlist patterns for known-safe requests
+allowlist_patterns:
+  - "^please\\s+(look\\s+up|retrieve|fetch|get|find|search|pull)"
+  - "^i\\s+need\\s+(to\\s+)?(retrieve|find|get|search|look\\s+up)"
+  - "^can\\s+you\\s+(please\\s+)?(get|find|retrieve|search|look\\s+up|pull)"
+  - "ticket\\s*#?\\s*\\w+-\\d+"  # Ticket references
+  - "customer\\s*(id|ID)\\s*:?\\s*\\w+-?\\d+"  # Customer IDs
+  - "standard\\s+(request|operation|procedure)"
+  - "following\\s+up"
+  - "routine\\s+request"

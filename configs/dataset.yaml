@@ -1,0 +1,39 @@
+# Dataset Generation Configuration
+# =================================
+# Configuration for generating the prompt injection detection dataset.
+
+# Global random seed for reproducibility
+# Using 1337 as the canonical seed for this research project
+seed: 1337
+
+# Total number of samples to generate
+# The dataset will be balanced: 50% benign, 50% attack
+# Attack samples will be evenly distributed among AF1-AF4
+n_samples: 1000
+
+# Output configuration
+output:
+  # Directory for output files
+  dir: "data/"
+  
+  # Output file names
+  dataset_file: "dataset.jsonl"
+  manifest_file: "manifest.json"
+
+# Dataset properties (informational, used for documentation)
+properties:
+  language: "en"
+  
+  # Attack families to include
+  attack_families:
+    - AF1  # Instruction Override
+    - AF2  # Data Exfiltration  
+    - AF3  # Tool Hijacking
+    - AF4  # Indirect Injection
+  
+  # Tools to use
+  tools:
+    - getCustomerRecord
+    - searchTickets
+    - exportReport
+    - resetUserMFA

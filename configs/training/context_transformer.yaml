@@ -1,0 +1,53 @@
+# Context-Augmented Transformer Configuration
+# ===========================================
+# Neural classifier using pretrained transformer with contextual input.
+# Input format: [ROLE] [SEP] [TOOL] [SEP] [SCHEMA] [SEP] [DESC] [SEP] [PROMPT]
+
+model_type: context_transformer
+
+# Base model from HuggingFace
+model_name: "distilroberta-base"
+
+# Random seed for reproducibility
+seed: 42
+
+# Context augmentation parameters
+# -------------------------------
+# Whether to include tool schema in input
+include_schema: true
+
+# Whether to include tool description in input
+include_description: true
+
+# Maximum characters for schema (truncated if longer)
+max_schema_length: 200
+
+# Tokenization parameters
+# -----------------------
+# Maximum sequence length (tokens)
+# May need to be larger to accommodate context
+max_length: 512
+
+# Training parameters
+# -------------------
+# Batch size (may need to be smaller due to longer sequences)
+batch_size: 16
+
+# Learning rate
+learning_rate: 2.0e-5
+
+# Number of training epochs
+num_epochs: 3
+
+# Warmup steps
+warmup_steps: 100
+
+# Weight decay
+weight_decay: 0.01
+
+# Evaluation strategy
+# -------------------
+eval_strategy: "epoch"
+save_strategy: "epoch"
+load_best_model_at_end: true
+metric_for_best_model: "roc_auc"
