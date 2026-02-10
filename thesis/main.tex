@@ -56,6 +56,48 @@
 
 \input{chapters/tables}
 
+% ── Reproducibility Notes ────────────────────────────────────────────────────
+\newpage
+\section{Reproducibility Notes}
+\label{sec:reproducibility_notes}
+
+All experimental results reported in this thesis can be reproduced from the
+repository using two commands:
+
+\begin{verbatim}
+make compare_truncation_longschema
+make verify_longschema_results
+\end{verbatim}
+
+The first command executes the full long-schema truncation ablation pipeline
+(dataset generation, splitting, training, evaluation, and aggregation). The
+second command runs the automated verification script, which checks artifact
+completeness, truncation invariant consistency, and ROC-AUC regression bounds.
+
+\paragraph{Artifact index.}
+The file \texttt{THESIS\_ARTIFACTS.md} in the repository root serves as the
+authoritative index linking each thesis table and figure to the exact data
+file from which it was derived.
+
+\paragraph{Supporting artifacts.}
+The following files document the experimental environment and execution:
+
+\begin{itemize}
+    \item \texttt{run\_manifest.md} --- records the git commit hash, executed
+          commands, dataset configuration, and model settings for each
+          experiment run.
+    \item \texttt{environment\_freeze.txt} --- captures the exact Python
+          package versions (torch, transformers, scikit-learn, etc.) used
+          during training and evaluation.
+    \item \texttt{verification\_output.txt} --- contains the full output of
+          the automated verification pipeline, confirming that all artifact
+          checks passed.
+\end{itemize}
+
+Together with deterministic seeds and controlled split protocols, these
+artifacts ensure that reported results are traceable to a specific repository
+state and reproducible under equivalent conditions.
+
 % ── Bibliography ─────────────────────────────────────────────────────────────
 \newpage
 \bibliographystyle{plainnat}
