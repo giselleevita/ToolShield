@@ -46,6 +46,8 @@ dev = [
     "mypy>=1.5",
     "types-PyYAML>=6.0",
     "httpx>=0.25",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
 ]
 
 [project.scripts]

@@ -155,6 +155,49 @@ class TransformerClassifier(BaseClassifier):
         """
         return self.extract_prompts(records)
 
+    def _make_dataset(
+        self,
+        records: list[DatasetRecord],
+        labels: list[int] | None,
+    ) -> TorchDataset:
+        """Create a PyTorch Dataset from records.
+
+        Override in subclasses for custom tokenization strategies
+        (e.g., prompt-preserving truncation).
+
+        Args:
+            records: Dataset records.
+            labels: Optional list of labels.
+
+        Returns:
+            PyTorch Dataset ready for the Trainer.
+        """
+        texts = self._get_texts(records)
+        return PromptDataset(texts, labels, self.tokenizer, self.max_length)
+
+    def _prepare_batch_encodings(
+        self,
+        records_batch: list[DatasetRecord],
+    ) -> dict[str, torch.Tensor]:
+        """Prepare tokenized encodings for an inference batch.
+
+        Override in subclasses for custom tokenization strategies.
+
+        Args:
+            records_batch: Batch of dataset records.
+
+        Returns:
+            Dictionary with 'input_ids' and 'attention_mask' tensors.
+        """
+        texts = self._get_texts(records_batch)
+        return self.tokenizer(
+            texts,
+            truncation=True,
+            padding=True,
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+
     def train(
         self,
         train_records: list[DatasetRecord],
@@ -177,20 +220,14 @@ class TransformerClassifier(BaseClassifier):
             problem_type="single_label_classification",
         )
 
-        # Prepare datasets
-        train_texts = self._get_texts(train_records)
+        # Prepare datasets (subclasses override _make_dataset for custom tokenization)
         train_labels = self.extract_labels(train_records).tolist()
-        train_dataset = PromptDataset(
-            train_texts, train_labels, self.tokenizer, self.max_length
-        )
+        train_dataset = self._make_dataset(train_records, train_labels)
 
         eval_dataset = None
         if val_records:
-            val_texts = self._get_texts(val_records)
             val_labels = self.extract_labels(val_records).tolist()
-            eval_dataset = PromptDataset(
-                val_texts, val_labels, self.tokenizer, self.max_length
-            )
+            eval_dataset = self._make_dataset(val_records, val_labels)
 
         # Training arguments
         # Use a temporary directory for training outputs
@@ -258,11 +295,13 @@ class TransformerClassifier(BaseClassifier):
     def predict_scores(
         self,
         records: list[DatasetRecord],
+        batch_size: int | None = None,
     ) -> np.ndarray:
         """Predict attack scores for the provided records.
 
         Args:
             records: Records to predict on.
+            batch_size: Batch size for inference. Defaults to training batch size.
 
         Returns:
             Array of scores in [0, 1] where higher = more likely attack.
@@ -273,27 +312,119 @@ class TransformerClassifier(BaseClassifier):
         if not self._is_trained or self.model is None or self.tokenizer is None:
             raise RuntimeError("Model must be trained or loaded before prediction")
 
-        texts = self._get_texts(records)
-        dataset = PromptDataset(texts, None, self.tokenizer, self.max_length)
+        if len(records) == 0:
+            return np.array([])
 
-        # Set model to eval mode
+        batch_size = batch_size or self.batch_size
+        
+        # Ensure model is in eval mode
         self.model.eval()
         device = next(self.model.parameters()).device
 
         all_scores = []
-        with torch.no_grad():
-            for i in range(len(dataset)):
-                item = dataset[i]
-                input_ids = item["input_ids"].unsqueeze(0).to(device)
-                attention_mask = item["attention_mask"].unsqueeze(0).to(device)
-
+        
+        # Process in batches with inference_mode for efficiency
+        with torch.inference_mode():
+            for i in range(0, len(records), batch_size):
+                batch_records = records[i:i + batch_size]
+                
+                # Tokenize batch (subclasses override for custom strategies)
+                encodings = self._prepare_batch_encodings(batch_records)
+                
+                input_ids = encodings["input_ids"].to(device)
+                attention_mask = encodings["attention_mask"].to(device)
+                
+                # Forward pass
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
                 logits = outputs.logits
                 probs = torch.softmax(logits, dim=-1)
-                score = probs[0, 1].item()  # Probability of attack class
-                all_scores.append(score)
+                scores = probs[:, 1].cpu().numpy()  # Probability of attack class
+                all_scores.extend(scores)
 
         return np.array(all_scores)
+    
+    def predict_scores_timed(
+        self,
+        records: list[DatasetRecord],
+        batch_size: int | None = None,
+    ) -> tuple[np.ndarray, float, float]:
+        """Predict with separate timing for tokenization and inference.
+
+        Args:
+            records: Records to predict on.
+            batch_size: Batch size for inference.
+
+        Returns:
+            Tuple of (scores, tokenize_time_ms, infer_time_ms).
+        """
+        import time
+        
+        if not self._is_trained or self.model is None or self.tokenizer is None:
+            raise RuntimeError("Model must be trained or loaded before prediction")
+
+        if len(records) == 0:
+            return np.array([]), 0.0, 0.0
+
+        batch_size = batch_size or self.batch_size
+        
+        self.model.eval()
+        device = next(self.model.parameters()).device
+
+        all_scores = []
+        total_tokenize_ms = 0.0
+        total_infer_ms = 0.0
+        
+        with torch.inference_mode():
+            for i in range(0, len(records), batch_size):
+                batch_records = records[i:i + batch_size]
+                
+                # Time tokenization (subclasses override for custom strategies)
+                t0 = time.perf_counter()
+                encodings = self._prepare_batch_encodings(batch_records)
+                input_ids = encodings["input_ids"].to(device)
+                attention_mask = encodings["attention_mask"].to(device)
+                total_tokenize_ms += (time.perf_counter() - t0) * 1000
+                
+                # Time inference
+                t0 = time.perf_counter()
+                outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+                logits = outputs.logits
+                probs = torch.softmax(logits, dim=-1)
+                scores = probs[:, 1].cpu().numpy()
+                total_infer_ms += (time.perf_counter() - t0) * 1000
+                
+                all_scores.extend(scores)
+
+        return np.array(all_scores), total_tokenize_ms, total_infer_ms
+    
+    def warmup(self, n_samples: int = 20) -> None:
+        """Warmup the model with dummy inference.
+        
+        Args:
+            n_samples: Number of dummy samples to run.
+        """
+        if not self._is_trained or self.model is None or self.tokenizer is None:
+            return
+            
+        self.model.eval()
+        device = next(self.model.parameters()).device
+        
+        # Create dummy inputs
+        dummy_texts = ["This is a warmup text for model inference."] * n_samples
+        
+        with torch.inference_mode():
+            encodings = self.tokenizer(
+                dummy_texts,
+                truncation=True,
+                padding=True,
+                max_length=self.max_length,
+                return_tensors="pt",
+            )
+            input_ids = encodings["input_ids"].to(device)
+            attention_mask = encodings["attention_mask"].to(device)
+            
+            # Run inference
+            _ = self.model(input_ids=input_ids, attention_mask=attention_mask)
 
     def save(self, path: str | Path) -> None:
         """Save the model to disk.

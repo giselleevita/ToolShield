@@ -42,13 +42,16 @@ class LatencyResult:
     """Container for latency measurement results.
     
     Attributes:
-        p50_ms: 50th percentile latency in milliseconds.
-        p95_ms: 95th percentile latency in milliseconds.
-        mean_ms: Mean latency in milliseconds.
-        min_ms: Minimum latency in milliseconds.
-        max_ms: Maximum latency in milliseconds.
+        p50_ms: 50th percentile total latency in milliseconds.
+        p95_ms: 95th percentile total latency in milliseconds.
+        mean_ms: Mean total latency in milliseconds.
+        min_ms: Minimum total latency in milliseconds.
+        max_ms: Maximum total latency in milliseconds.
         n_samples: Number of samples used for measurement.
         n_runs: Number of timing runs performed.
+        mode: Latency mode ('cold' or 'warm').
+        tokenize_p50_ms: 50th percentile tokenization latency (transformers only).
+        infer_p50_ms: 50th percentile inference latency (transformers only).
     """
     
     p50_ms: float
@@ -58,10 +61,15 @@ class LatencyResult:
     max_ms: float
     n_samples: int
     n_runs: int
+    mode: str = "warm"
+    tokenize_p50_ms: float | None = None
+    tokenize_p95_ms: float | None = None
+    infer_p50_ms: float | None = None
+    infer_p95_ms: float | None = None
     
     def to_dict(self) -> dict[str, float]:
         """Convert to dictionary."""
-        return {
+        result = {
             "latency_p50_ms": self.p50_ms,
             "latency_p95_ms": self.p95_ms,
             "latency_mean_ms": self.mean_ms,
@@ -69,7 +77,18 @@ class LatencyResult:
             "latency_max_ms": self.max_ms,
             "latency_n_samples": float(self.n_samples),
             "latency_n_runs": float(self.n_runs),
+            "latency_mode": self.mode,
         }
+        # Add tokenize/infer breakdown if available
+        if self.tokenize_p50_ms is not None:
+            result["latency_tokenize_p50_ms"] = self.tokenize_p50_ms
+        if self.tokenize_p95_ms is not None:
+            result["latency_tokenize_p95_ms"] = self.tokenize_p95_ms
+        if self.infer_p50_ms is not None:
+            result["latency_infer_p50_ms"] = self.infer_p50_ms
+        if self.infer_p95_ms is not None:
+            result["latency_infer_p95_ms"] = self.infer_p95_ms
+        return result
 
 
 @dataclass
@@ -90,8 +109,11 @@ class MetricsResult:
         asr_reduction_95: ASR reduction at TPR=0.95 threshold.
         blocked_benign_rate_90: Benign blocked rate at TPR=0.90 (= FPR).
         blocked_benign_rate_95: Benign blocked rate at TPR=0.95 (= FPR).
-        latency_p50_ms: 50th percentile inference latency in milliseconds.
-        latency_p95_ms: 95th percentile inference latency in milliseconds.
+        latency_p50_ms: 50th percentile total latency in milliseconds.
+        latency_p95_ms: 95th percentile total latency in milliseconds.
+        latency_mode: Latency measurement mode ('warm' or 'cold').
+        latency_tokenize_p50_ms: 50th percentile tokenization latency (transformers only).
+        latency_infer_p50_ms: 50th percentile inference latency (transformers only).
     """
 
     roc_auc: float
@@ -109,6 +131,12 @@ class MetricsResult:
     blocked_benign_rate_95: float
     latency_p50_ms: float | None = None
     latency_p95_ms: float | None = None
+    latency_mode: str | None = None
+    latency_tokenize_p50_ms: float | None = None
+    latency_tokenize_p95_ms: float | None = None
+    latency_infer_p50_ms: float | None = None
+    latency_infer_p95_ms: float | None = None
+    warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
@@ -131,6 +159,18 @@ class MetricsResult:
             result["latency_p50_ms"] = self.latency_p50_ms
         if self.latency_p95_ms is not None:
             result["latency_p95_ms"] = self.latency_p95_ms
+        if self.latency_mode is not None:
+            result["latency_mode"] = self.latency_mode
+        if self.latency_tokenize_p50_ms is not None:
+            result["latency_tokenize_p50_ms"] = self.latency_tokenize_p50_ms
+        if self.latency_tokenize_p95_ms is not None:
+            result["latency_tokenize_p95_ms"] = self.latency_tokenize_p95_ms
+        if self.latency_infer_p50_ms is not None:
+            result["latency_infer_p50_ms"] = self.latency_infer_p50_ms
+        if self.latency_infer_p95_ms is not None:
+            result["latency_infer_p95_ms"] = self.latency_infer_p95_ms
+        if self.warnings:
+            result["warnings"] = self.warnings
         return result
 
 
@@ -336,18 +376,22 @@ def measure_latency(
     model: PredictorProtocol,
     records: list[DatasetRecord],
     n_runs: int = 10,
-    warmup_runs: int = 2,
+    warmup_runs: int = 20,
+    mode: str = "warm",
 ) -> LatencyResult:
     """Measure inference latency for a model.
     
     Runs the model multiple times on the same data to get stable
     latency measurements. Reports P50 and P95 percentiles.
     
+    For transformer models, also reports separate tokenization and inference times.
+    
     Args:
         model: Model with predict_scores method.
         records: Records to use for inference.
         n_runs: Number of timing runs to perform.
-        warmup_runs: Number of warmup runs before timing.
+        warmup_runs: Number of warmup runs before timing (only in warm mode).
+        mode: 'warm' (default, includes warmup) or 'cold' (no warmup, includes loading).
         
     Returns:
         LatencyResult with P50, P95, and other statistics.
@@ -361,23 +405,48 @@ def measure_latency(
             max_ms=0.0,
             n_samples=0,
             n_runs=0,
+            mode=mode,
         )
     
-    # Warmup runs (not timed)
-    for _ in range(warmup_runs):
-        _ = model.predict_scores(records)
+    # Check if model has warmup method (transformers)
+    has_warmup = hasattr(model, 'warmup') and callable(getattr(model, 'warmup'))
+    has_timed_predict = hasattr(model, 'predict_scores_timed') and callable(getattr(model, 'predict_scores_timed'))
+    
+    # Warmup phase (only in warm mode)
+    if mode == "warm":
+        if has_warmup:
+            # Use dedicated warmup method
+            model.warmup(n_samples=warmup_runs)
+        else:
+            # Fallback: run inference for warmup
+            for _ in range(min(warmup_runs, 5)):
+                _ = model.predict_scores(records[:min(10, len(records))])
     
     # Timed runs
     times_ms: list[float] = []
+    tokenize_times_ms: list[float] = []
+    infer_times_ms: list[float] = []
+    
     for _ in range(n_runs):
-        start = time.perf_counter()
-        _ = model.predict_scores(records)
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        times_ms.append(elapsed_ms)
+        if has_timed_predict:
+            # Use timed predict for separate tokenize/infer timing
+            start = time.perf_counter()
+            _, tokenize_ms, infer_ms = model.predict_scores_timed(records)
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            times_ms.append(elapsed_ms)
+            tokenize_times_ms.append(tokenize_ms)
+            infer_times_ms.append(infer_ms)
+        else:
+            # Standard timing
+            start = time.perf_counter()
+            _ = model.predict_scores(records)
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            times_ms.append(elapsed_ms)
     
     times_array = np.array(times_ms)
     
-    return LatencyResult(
+    # Build result
+    result = LatencyResult(
         p50_ms=float(np.percentile(times_array, 50)),
         p95_ms=float(np.percentile(times_array, 95)),
         mean_ms=float(np.mean(times_array)),
@@ -385,7 +454,19 @@ def measure_latency(
         max_ms=float(np.max(times_array)),
         n_samples=len(records),
         n_runs=n_runs,
+        mode=mode,
     )
+    
+    # Add tokenize/infer breakdown if available
+    if tokenize_times_ms:
+        tokenize_array = np.array(tokenize_times_ms)
+        infer_array = np.array(infer_times_ms)
+        result.tokenize_p50_ms = float(np.percentile(tokenize_array, 50))
+        result.tokenize_p95_ms = float(np.percentile(tokenize_array, 95))
+        result.infer_p50_ms = float(np.percentile(infer_array, 50))
+        result.infer_p95_ms = float(np.percentile(infer_array, 95))
+    
+    return result
 
 
 def measure_per_sample_latency(
@@ -465,6 +546,15 @@ def compute_all_metrics(
     y_true = np.asarray(y_true)
     y_scores = np.asarray(y_scores)
 
+    # Metric correctness guard: warn if scores look like hard labels
+    warnings: list[str] = []
+    n_unique_scores = len(np.unique(y_scores))
+    if n_unique_scores <= 2:
+        warnings.append(
+            f"ROC-AUC computed on {n_unique_scores} unique score value(s) "
+            "(possibly hard labels instead of continuous scores)"
+        )
+
     # Default attack goals if not provided
     if attack_goals is None:
         # Assume all attacks have unsafe goals
@@ -492,6 +582,11 @@ def compute_all_metrics(
     # Latency metrics
     latency_p50 = latency.p50_ms if latency else None
     latency_p95 = latency.p95_ms if latency else None
+    latency_mode = latency.mode if latency else None
+    latency_tokenize_p50 = latency.tokenize_p50_ms if latency else None
+    latency_tokenize_p95 = latency.tokenize_p95_ms if latency else None
+    latency_infer_p50 = latency.infer_p50_ms if latency else None
+    latency_infer_p95 = latency.infer_p95_ms if latency else None
 
     return MetricsResult(
         roc_auc=roc_auc,
@@ -509,6 +604,12 @@ def compute_all_metrics(
         blocked_benign_rate_95=blocked_95,
         latency_p50_ms=latency_p50,
         latency_p95_ms=latency_p95,
+        latency_mode=latency_mode,
+        latency_tokenize_p50_ms=latency_tokenize_p50,
+        latency_tokenize_p95_ms=latency_tokenize_p95,
+        latency_infer_p50_ms=latency_infer_p50,
+        latency_infer_p95_ms=latency_infer_p95,
+        warnings=warnings,
     )
 
 
@@ -543,10 +644,16 @@ def print_metrics(metrics: MetricsResult) -> None:
     print(f"  Blocked benign:  {metrics.blocked_benign_rate_95:.4f}")
 
     if metrics.latency_p50_ms is not None or metrics.latency_p95_ms is not None:
-        print("\nLatency Metrics:")
+        mode_str = f" ({metrics.latency_mode})" if metrics.latency_mode else ""
+        print(f"\nLatency Metrics{mode_str}:")
         if metrics.latency_p50_ms is not None:
             print(f"  P50 latency:     {metrics.latency_p50_ms:.2f} ms")
         if metrics.latency_p95_ms is not None:
             print(f"  P95 latency:     {metrics.latency_p95_ms:.2f} ms")
+        # Show tokenize/infer breakdown if available (transformers)
+        if metrics.latency_tokenize_p50_ms is not None:
+            print(f"  P50 tokenize:    {metrics.latency_tokenize_p50_ms:.2f} ms")
+        if metrics.latency_infer_p50_ms is not None:
+            print(f"  P50 inference:   {metrics.latency_infer_p50_ms:.2f} ms")
 
     print("=" * 60 + "\n")

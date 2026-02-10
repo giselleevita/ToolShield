@@ -23,9 +23,10 @@ from toolshield.models.base import BaseClassifier
 
 
 # Default suspicious keywords indicating potential injection
+# NOTE: Deliberately excludes tool-specific names to ensure fair tool-holdout
+# evaluation. This is the "Generic Injection Heuristic" (H1) baseline.
 DEFAULT_SUSPICIOUS_KEYWORDS = [
     # Instruction override patterns
-    "ignore",
     "ignore previous",
     "ignore all",
     "disregard",
@@ -33,8 +34,6 @@ DEFAULT_SUSPICIOUS_KEYWORDS = [
     "override",
     "bypass",
     "skip",
-    "instead",
-    "actually",
     "new instructions",
     "new directive",
     "system override",
@@ -43,13 +42,11 @@ DEFAULT_SUSPICIOUS_KEYWORDS = [
     "debug mode",
     "elevated privileges",
     # Jailbreak patterns
-    "dan",
     "do anything now",
     "unrestricted",
     "no restrictions",
     "pretend",
     "roleplay",
-    "hypothetical",
     "for testing",
     # Exfiltration patterns
     "send to",
@@ -61,21 +58,14 @@ DEFAULT_SUSPICIOUS_KEYWORDS = [
     "external",
     "mirror",
     "transmit",
-    # Tool hijacking patterns
-    "instead of",
-    "change to",
-    "switch to",
+    # Tool hijacking patterns (generic, no tool names)
     "redirect to",
     "call instead",
-    "reset mfa",
-    "resetusermfa",
     # Indirect injection markers
-    "system note",
-    "internal",
-    "admin flag",
-    "escalation",
     "auto-approve",
     "hidden",
+    "internal instruction",
+    "system note",
 ]
 
 # Regex patterns for structural indicators
@@ -93,15 +83,14 @@ DEFAULT_SUSPICIOUS_PATTERNS = [
 ]
 
 # Allowlist patterns that indicate benign requests
+# NOTE: Deliberately narrow to avoid "please X. Also ignore instructions." bypasses.
+# Only allowlists structured identifiers and explicit security discussion context.
 DEFAULT_ALLOWLIST_PATTERNS = [
-    r"^please\s+(look\s+up|retrieve|fetch|get|find|search|pull)",
-    r"^i\s+need\s+(to\s+)?(retrieve|find|get|search|look\s+up)",
-    r"^can\s+you\s+(please\s+)?(get|find|retrieve|search|look\s+up|pull)",
+    # Structured identifiers (narrow, safe)
     r"ticket\s*#?\s*\w+-\d+",  # Ticket references like TKT-12345
     r"customer\s*(id|ID)\s*:?\s*\w+-?\d+",  # Customer ID references
-    r"standard\s+(request|operation|procedure)",
-    r"following\s+up",
-    r"routine\s+request",
+    # Security discussion context (educational queries about injection)
+    r"\b(explain|definition|what\s+is|how\s+does|mitigation|defense|research|paper)\b.*\b(prompt\s+injection|jailbreak|llm\s+security)\b",
 ]
 
 

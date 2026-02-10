@@ -12,42 +12,40 @@ model_name: "distilroberta-base"
 seed: 42
 
 # Context augmentation parameters
-# -------------------------------
-# Whether to include tool schema in input
 include_schema: true
-
-# Whether to include tool description in input
 include_description: true
-
-# Maximum characters for schema (truncated if longer)
 max_schema_length: 200
 
+# Truncation strategy
+# -------------------
+# "naive"       — concatenate all fields, right-truncate to max_length.
+#                  Silently clips the prompt when tool schemas are large.
+# "keep_prompt" — reserve prompt_min_tokens for the prompt tail,
+#                  truncate context to fit the remainder. Preserves
+#                  the attacker-controlled signal under fixed token budgets.
+truncate_strategy: "keep_prompt"
+
+# Minimum tokens guaranteed for the prompt (only used with keep_prompt)
+prompt_min_tokens: 128
+
+# Which end of the prompt to keep: "tail" (last N tokens, best for
+# attacks which often append payloads) or "head" (first N tokens)
+prompt_side: "tail"
+
 # Tokenization parameters
-# -----------------------
-# Maximum sequence length (tokens)
-# May need to be larger to accommodate context
-max_length: 512
+max_length: 256
 
 # Training parameters
-# -------------------
-# Batch size (may need to be smaller due to longer sequences)
-batch_size: 16
-
-# Learning rate
+batch_size: 8
 learning_rate: 2.0e-5
-
-# Number of training epochs
 num_epochs: 3
-
-# Warmup steps
-warmup_steps: 100
-
-# Weight decay
+warmup_steps: 20
 weight_decay: 0.01
 
 # Evaluation strategy
-# -------------------
 eval_strategy: "epoch"
 save_strategy: "epoch"
 load_best_model_at_end: true
 metric_for_best_model: "roc_auc"
+
+# early_stopping_patience: 1   # uncomment only if your trainer supports it

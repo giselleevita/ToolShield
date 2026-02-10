@@ -1,6 +1,12 @@
-# Heuristic Classifier Configuration
-# ===================================
+# Heuristic Classifier Configuration (H1: Generic Injection Heuristic)
+# =====================================================================
 # Rule-based baseline using keyword matching and patterns.
+#
+# SCIENTIFIC NOTE: This configuration deliberately EXCLUDES tool-specific
+# keywords to ensure fair holdout evaluation. The detector should not have
+# privileged knowledge of held-out tools. See configs/legacy/ for tool-aware variant.
+#
+# For a tool-aware variant (H2: Policy Keyword Heuristic), see heuristic_policy.yaml
 
 model_type: heuristic
 
@@ -8,10 +14,9 @@ model_type: heuristic
 case_sensitive: false
 
 # Suspicious keywords that may indicate injection attempts
-# These are the default keywords; customize as needed
+# NOTE: No tool-specific names included (holdout-safe)
 suspicious_keywords:
   # Instruction override patterns
-  - "ignore"
   - "ignore previous"
   - "ignore all"
   - "disregard"
@@ -19,8 +24,6 @@ suspicious_keywords:
   - "override"
   - "bypass"
   - "skip"
-  - "instead"
-  - "actually"
   - "new instructions"
   - "new directive"
   - "system override"
@@ -29,13 +32,11 @@ suspicious_keywords:
   - "debug mode"
   - "elevated privileges"
   # Jailbreak patterns
-  - "dan"
   - "do anything now"
   - "unrestricted"
   - "no restrictions"
   - "pretend"
   - "roleplay"
-  - "hypothetical"
   - "for testing"
   # Exfiltration patterns
   - "send to"
@@ -47,42 +48,34 @@ suspicious_keywords:
   - "external"
   - "mirror"
   - "transmit"
-  # Tool hijacking patterns
-  - "instead of"
-  - "change to"
-  - "switch to"
+  # Tool hijacking patterns (generic, no tool names)
   - "redirect to"
   - "call instead"
-  - "reset mfa"
-  - "resetusermfa"
   # Indirect injection markers
-  - "system note"
-  - "internal"
-  - "admin flag"
-  - "escalation"
   - "auto-approve"
   - "hidden"
+  - "internal instruction"
+  - "system note"
 
 # Regex patterns for structural indicators
 suspicious_patterns:
-  - "\\[\\[.*ADMIN.*\\]\\]"  # [[ADMIN: ...]]
-  - "\\{\\{.*SYSTEM.*\\}\\}"  # {{SYSTEM: ...}}
-  - "<<<.*>>>"  # <<<...>>>
-  - "---END.*---"  # ---END OF SYSTEM PROMPT---
-  - "BEGIN.*COMMAND"  # BEGIN SYSTEM COMMAND
-  - "\\[INTERNAL\\]"  # [INTERNAL]
+  - "\\[\\[.*ADMIN.*\\]\\]"
+  - "\\{\\{.*SYSTEM.*\\}\\}"
+  - "<<<.*>>>"
+  - "---END.*---"
+  - "BEGIN.*COMMAND"
+  - "\\[INTERNAL\\]"
   - "\\[PRIORITY\\s*OVERRIDE\\]"
-  - "<!--.*-->"  # HTML comments with instructions
+  - "<!--.*-->"
   - "auth_level\\s*=\\s*admin"
   - "restrictions\\s*=\\s*none"
 
 # Allowlist patterns for known-safe requests
+# NOTE: Deliberately narrow to avoid "please X. Also ignore instructions." bypasses.
+# Only allowlists structured identifiers and explicit security discussion context.
 allowlist_patterns:
-  - "^please\\s+(look\\s+up|retrieve|fetch|get|find|search|pull)"
-  - "^i\\s+need\\s+(to\\s+)?(retrieve|find|get|search|look\\s+up)"
-  - "^can\\s+you\\s+(please\\s+)?(get|find|retrieve|search|look\\s+up|pull)"
-  - "ticket\\s*#?\\s*\\w+-\\d+"  # Ticket references
-  - "customer\\s*(id|ID)\\s*:?\\s*\\w+-?\\d+"  # Customer IDs
-  - "standard\\s+(request|operation|procedure)"
-  - "following\\s+up"
-  - "routine\\s+request"
+  # Structured identifiers (narrow, safe)
+  - "ticket\\s*#?\\s*\\w+-\\d+"
+  - "customer\\s*(id|ID)\\s*:?\\s*\\w+-?\\d+"
+  # Security discussion context (educational queries)
+  - "\\b(explain|definition|what\\s+is|how\\s+does|mitigation|defense|research|paper)\\b.*\\b(prompt\\s+injection|jailbreak|llm\\s+security)\\b"

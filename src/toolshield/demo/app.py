@@ -148,6 +148,9 @@ def _load_model(model_path: str) -> Any:
     if model_type == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
         model = HeuristicClassifier.load(model_dir)
+    elif model_type == "heuristic_score":
+        from toolshield.models.heuristic_score import ScoredHeuristicClassifier
+        model = ScoredHeuristicClassifier.load(model_dir)
     elif model_type == "tfidf_lr":
         from toolshield.models.tfidf_lr import TfidfLRClassifier
         model = TfidfLRClassifier.load(model_dir)
@@ -231,9 +234,16 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event() -> None:
-    """Pre-load model on startup."""
+    """Pre-load model on startup and warmup if applicable."""
     try:
-        _load_model(DEFAULT_MODEL_PATH)
+        model = _load_model(DEFAULT_MODEL_PATH)
+        logger.info(f"Model loaded: {DEFAULT_MODEL_PATH}")
+        
+        # Warmup transformer models for fast inference
+        if hasattr(model, 'warmup') and callable(getattr(model, 'warmup')):
+            logger.info("Warming up transformer model...")
+            model.warmup(n_samples=20)
+            logger.info("Model warmup complete")
     except Exception as e:
         logger.warning(f"Could not pre-load model: {e}")
         logger.warning("Model will be loaded on first request")

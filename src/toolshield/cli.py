@@ -205,18 +205,28 @@ def train(
     if model == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
         classifier = HeuristicClassifier(config=model_config)
+    elif model == "heuristic_score":
+        from toolshield.models.heuristic_score import ScoredHeuristicClassifier
+        classifier = ScoredHeuristicClassifier(config=model_config)
     elif model == "tfidf_lr":
         from toolshield.models.tfidf_lr import TfidfLRClassifier
         classifier = TfidfLRClassifier(config=model_config)
     elif model == "transformer":
         from toolshield.models.transformer import TransformerClassifier
         classifier = TransformerClassifier(config=model_config)
-    elif model == "context_transformer":
+    elif model in (
+        "context_transformer", "context_transformer_naive", "context_transformer_keep_prompt",
+        "context_transformer_naive_longschema", "context_transformer_keep_prompt_longschema",
+    ):
         from toolshield.models.context_transformer import ContextTransformerClassifier
         classifier = ContextTransformerClassifier(config=model_config)
     else:
         console.print(f"[red]Error:[/red] Unknown model type: {model}")
-        console.print("Valid models: heuristic, tfidf_lr, transformer, context_transformer")
+        console.print(
+            "Valid models: heuristic, heuristic_score, tfidf_lr, transformer, "
+            "context_transformer, context_transformer_naive, context_transformer_keep_prompt, "
+            "context_transformer_naive_longschema, context_transformer_keep_prompt_longschema"
+        )
         raise typer.Exit(1)
 
     # Train
@@ -265,6 +275,9 @@ def _load_model(model_path: Path) -> Any:
     if model_type == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
         return HeuristicClassifier.load(model_path)
+    elif model_type == "heuristic_score":
+        from toolshield.models.heuristic_score import ScoredHeuristicClassifier
+        return ScoredHeuristicClassifier.load(model_path)
     elif model_type == "tfidf_lr":
         from toolshield.models.tfidf_lr import TfidfLRClassifier
         return TfidfLRClassifier.load(model_path)
@@ -298,9 +311,18 @@ def evaluate(
     measure_latency: bool = typer.Option(
         True, "--latency/--no-latency", help="Measure inference latency"
     ),
+    latency_mode: str = typer.Option(
+        "warm", "--latency-mode", help="Latency measurement mode: 'warm' (default, with warmup) or 'cold'"
+    ),
 ) -> None:
     """Evaluate a trained model on test data."""
     console.print("[bold blue]ToolShield Model Evaluation[/bold blue]")
+
+    # Validate latency_mode
+    if latency_mode not in ("warm", "cold"):
+        console.print(f"[red]Error:[/red] Invalid latency mode: {latency_mode}")
+        console.print("Valid modes: warm, cold")
+        raise typer.Exit(1)
 
     # Load model
     try:
@@ -326,7 +348,7 @@ def evaluate(
     # Use evaluator for full evaluation
     from toolshield.evaluation.evaluator import ModelEvaluator
     
-    evaluator = ModelEvaluator(measure_latency=measure_latency)
+    evaluator = ModelEvaluator(measure_latency=measure_latency, latency_mode=latency_mode)
     
     # Infer protocol from path
     protocol = "S_random"

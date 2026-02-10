@@ -275,11 +275,17 @@ def split_s_tool_holdout(
     train_ratio: float = 0.7,
     val_ratio: float = 0.15,
 ) -> dict[str, list[DatasetRecord]]:
-    """Create S_tool_holdout split (hold out a specific tool).
+    """Create S_tool_holdout split (hold out a specific tool's schema).
 
-    Train/val contain all tools except the holdout tool.
-    Test contains all samples for the holdout tool (benign + attack).
-    No template leakage across splits.
+    Partitions records by tool_name at the record level:
+    - Test: all records where tool_name == holdout_tool (both benign + attack).
+    - Train/val: records for other tools, stratified by template with
+      template-level isolation enforced within train/val.
+
+    Templates may appear in both train/val and test on *different* tools.
+    This is correct for tool-schema generalisation: the model must detect
+    attacks it has seen on other tools when applied to the unseen tool.
+    Within train/val, no template_id appears in both train and val.
 
     Args:
         records: All dataset records.
@@ -290,48 +296,57 @@ def split_s_tool_holdout(
 
     Returns:
         Dictionary with 'train', 'val', 'test' keys mapping to record lists.
+
+    Raises:
+        ValueError: If any resulting split is single-class.
     """
     rng = random.Random(seed)
-    template_groups = _group_by_template(records)
 
-    # Separate templates by whether they contain holdout tool
-    holdout_templates: list[str] = []
-    non_holdout_templates: list[str] = []
+    # ── Step 1: partition records by tool_name ──────────────────────
+    holdout_records = [r for r in records if r.tool_name == holdout_tool]
+    non_holdout_records = [r for r in records if r.tool_name != holdout_tool]
 
-    for template_id, template_records in template_groups.items():
-        if any(r.tool_name == holdout_tool for r in template_records):
-            holdout_templates.append(template_id)
-        else:
-            non_holdout_templates.append(template_id)
+    # ── Step 2: group non-holdout records by template_id ────────────
+    non_holdout_groups = _group_by_template(non_holdout_records)
 
-    # Split non-holdout templates
-    non_holdout_groups = {tid: template_groups[tid] for tid in non_holdout_templates}
-
-    train_templates, val_templates, _ = _stratified_template_split(
-        non_holdout_groups, rng, train_ratio, val_ratio
+    # ── Step 3: stratified template split for train / val / (extra-test)
+    train_templates, val_templates, extra_test_templates = (
+        _stratified_template_split(
+            non_holdout_groups, rng, train_ratio, val_ratio
+        )
     )
 
-    # All holdout tool samples go to test
-    # Any templates not assigned yet (from non-holdout) also go to test
-    assigned = set(train_templates) | set(val_templates)
-    remaining_non_holdout = [tid for tid in non_holdout_templates if tid not in assigned]
-    test_templates = holdout_templates + remaining_non_holdout
+    # ── Step 4: collect records ─────────────────────────────────────
+    train_records = [r for tid in train_templates for r in non_holdout_groups[tid]]
+    val_records = [r for tid in val_templates for r in non_holdout_groups[tid]]
+    # Test = holdout-tool records + leftover non-holdout templates
+    test_records = holdout_records + [
+        r for tid in extra_test_templates for r in non_holdout_groups[tid]
+    ]
 
-    # Collect records
-    train_records = [r for tid in train_templates for r in template_groups[tid]]
-    val_records = [r for tid in val_templates for r in template_groups[tid]]
-    test_records = [r for tid in test_templates for r in template_groups[tid]]
-
-    # Shuffle within each split
+    # ── Step 5: shuffle within each split ───────────────────────────
     rng.shuffle(train_records)
     rng.shuffle(val_records)
     rng.shuffle(test_records)
 
-    return {
+    splits = {
         "train": train_records,
         "val": val_records,
         "test": test_records,
     }
+
+    # ── Step 6: validate both classes in every split ────────────────
+    for split_name, split_records in splits.items():
+        labels = {r.label_binary for r in split_records}
+        if len(labels) < 2:
+            raise ValueError(
+                f"S_tool_holdout {split_name} split is single-class "
+                f"(labels={labels}). The dataset must contain attacks "
+                f"distributed across tools so non-holdout records include "
+                f"both benign and malicious samples."
+            )
+
+    return splits
 
 
 def create_splits(
@@ -394,6 +409,94 @@ def verify_no_template_leakage(
     return True
 
 
+def verify_tool_holdout_constraints(
+    splits: dict[str, list[DatasetRecord]],
+    holdout_tool: str = "exportReport",
+) -> bool:
+    """Verify S_tool_holdout–specific integrity constraints.
+
+    Checks:
+    1. No holdout-tool records in train or val.
+    2. Holdout-tool records present in test.
+    3. Both classes (benign + attack) in every split.
+    4. Template disjointness within train/val (no template in both).
+    5. No exact record-ID leakage across any pair of splits.
+
+    Args:
+        splits: Dictionary mapping split names to record lists.
+        holdout_tool: The held-out tool name.
+
+    Returns:
+        True if all constraints pass, raises AssertionError otherwise.
+    """
+    train = splits["train"]
+    val = splits["val"]
+    test = splits["test"]
+
+    # 1. No holdout tool in train / val
+    assert all(r.tool_name != holdout_tool for r in train), (
+        f"Holdout tool '{holdout_tool}' found in train split"
+    )
+    assert all(r.tool_name != holdout_tool for r in val), (
+        f"Holdout tool '{holdout_tool}' found in val split"
+    )
+
+    # 2. Holdout tool must be in test
+    assert any(r.tool_name == holdout_tool for r in test), (
+        f"Holdout tool '{holdout_tool}' not found in test split"
+    )
+
+    # 3. Both classes in every split
+    for name, records in splits.items():
+        labels = {r.label_binary for r in records}
+        assert len(labels) >= 2, (
+            f"Split '{name}' is single-class (labels={labels}); "
+            f"need both benign and attack."
+        )
+
+    # 4. Template disjointness within train / val
+    train_templates = {r.template_id for r in train}
+    val_templates = {r.template_id for r in val}
+    overlap = train_templates & val_templates
+    assert len(overlap) == 0, (
+        f"Template leakage between train and val: {overlap}"
+    )
+
+    # 5. No record-ID leakage across any splits
+    train_ids = {r.id for r in train}
+    val_ids = {r.id for r in val}
+    test_ids = {r.id for r in test}
+    assert train_ids.isdisjoint(val_ids), "Record leakage between train and val"
+    assert train_ids.isdisjoint(test_ids), "Record leakage between train and test"
+    assert val_ids.isdisjoint(test_ids), "Record leakage between val and test"
+
+    return True
+
+
+def verify_all_splits_have_both_classes(
+    splits: dict[str, list[DatasetRecord]],
+) -> bool:
+    """Assert every split contains both label_binary 0 and 1.
+
+    Args:
+        splits: Dictionary mapping split names to record lists.
+
+    Returns:
+        True if all splits have both classes.
+
+    Raises:
+        ValueError: If any split is single-class.
+    """
+    for name, records in splits.items():
+        labels = {r.label_binary for r in records}
+        if len(labels) < 2:
+            raise ValueError(
+                f"Split '{name}' is single-class (labels={labels}). "
+                f"All splits must contain both benign and attack samples."
+            )
+    return True
+
+
 def save_splits(
     splits: dict[str, list[DatasetRecord]],
     output_dir: str | Path,
@@ -449,6 +552,10 @@ def create_and_save_splits(
 ) -> dict[str, Path]:
     """Load dataset, create splits, and save to files.
 
+    Uses protocol-aware verification:
+    - S_tool_holdout: record-level isolation + both-classes check.
+    - All others: strict template-level isolation.
+
     Args:
         input_path: Path to input dataset.jsonl.
         output_dir: Directory to save split files.
@@ -465,8 +572,14 @@ def create_and_save_splits(
     # Create splits
     splits = create_splits(records, protocol, seed)
 
-    # Verify no leakage
-    verify_no_template_leakage(splits)
+    # Protocol-aware verification
+    if protocol == SplitProtocol.S_TOOL_HOLDOUT.value:
+        verify_tool_holdout_constraints(splits)
+    else:
+        verify_no_template_leakage(splits)
+
+    # All protocols: both-classes guard
+    verify_all_splits_have_both_classes(splits)
 
     # Save
     return save_splits(splits, output_dir, protocol, seed)

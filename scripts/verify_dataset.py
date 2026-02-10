@@ -94,6 +94,10 @@ def check_template_disjointness(
     splits: dict[str, list[DatasetRecord]], protocol: str
 ) -> tuple[bool, str]:
     """Check that template_ids are disjoint across splits.
+
+    For S_tool_holdout, only train/val disjointness is required because
+    the same attack template can generate records for both the held-out
+    tool (→ test) and other tools (→ train/val).
     
     Args:
         splits: Dictionary mapping split names to records.
@@ -106,22 +110,29 @@ def check_template_disjointness(
     val_templates = {r.template_id for r in splits["val"]}
     test_templates = {r.template_id for r in splits["test"]}
     
-    train_val_overlap = train_templates & val_templates
-    train_test_overlap = train_templates & test_templates
-    val_test_overlap = val_templates & test_templates
-    
     issues = []
+    
+    # Train / val disjointness is always required
+    train_val_overlap = train_templates & val_templates
     if train_val_overlap:
         issues.append(f"train/val overlap: {len(train_val_overlap)} templates")
-    if train_test_overlap:
-        issues.append(f"train/test overlap: {len(train_test_overlap)} templates")
-    if val_test_overlap:
-        issues.append(f"val/test overlap: {len(val_test_overlap)} templates")
+    
+    # For S_tool_holdout, train-test and val-test template overlap is expected
+    if protocol != SplitProtocol.S_TOOL_HOLDOUT.value:
+        train_test_overlap = train_templates & test_templates
+        val_test_overlap = val_templates & test_templates
+        if train_test_overlap:
+            issues.append(f"train/test overlap: {len(train_test_overlap)} templates")
+        if val_test_overlap:
+            issues.append(f"val/test overlap: {len(val_test_overlap)} templates")
     
     if issues:
         return False, f"{protocol}: Template leakage! {', '.join(issues)}"
     
-    return True, f"{protocol}: No template leakage (train={len(train_templates)}, val={len(val_templates)}, test={len(test_templates)})"
+    msg = f"{protocol}: No template leakage (train={len(train_templates)}, val={len(val_templates)}, test={len(test_templates)})"
+    if protocol == SplitProtocol.S_TOOL_HOLDOUT.value:
+        msg += " [train/val checked; train-test overlap expected]"
+    return True, msg
 
 
 def check_attack_holdout_constraints(
@@ -319,6 +330,20 @@ def main() -> int:
         elif protocol == SplitProtocol.S_TOOL_HOLDOUT:
             passed, msg = check_tool_holdout_constraints(splits)
             results.append((f"{protocol_name} constraints", passed, msg))
+        
+        # Check both classes in every split
+        both_ok = True
+        for split_name in ["train", "val", "test"]:
+            labels = {r.label_binary for r in splits[split_name]}
+            if len(labels) < 2:
+                both_ok = False
+                results.append((
+                    f"{protocol_name} {split_name} classes",
+                    False,
+                    f"{split_name} is single-class (labels={labels})",
+                ))
+        if both_ok:
+            results.append((f"{protocol_name} both-classes", True, "All splits have both classes"))
     
     # Print results table
     console.print("\n")

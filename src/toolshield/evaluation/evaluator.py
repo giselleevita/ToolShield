@@ -120,6 +120,7 @@ class ModelEvaluator:
         budgets: list[float] | None = None,
         measure_latency: bool = True,
         latency_n_runs: int = 10,
+        latency_mode: str = "warm",
     ) -> None:
         """Initialize the evaluator.
         
@@ -127,10 +128,12 @@ class ModelEvaluator:
             budgets: FPR budgets to evaluate (default: [0.01, 0.03, 0.05]).
             measure_latency: Whether to measure inference latency.
             latency_n_runs: Number of runs for latency measurement.
+            latency_mode: 'warm' (with warmup, default) or 'cold' (no warmup).
         """
         self.budgets = budgets or self.DEFAULT_BUDGETS
         self.measure_latency_flag = measure_latency
         self.latency_n_runs = latency_n_runs
+        self.latency_mode = latency_mode
     
     def _find_threshold_for_fpr_budget(
         self,
@@ -250,7 +253,12 @@ class ModelEvaluator:
         # Measure latency
         latency = None
         if self.measure_latency_flag:
-            latency = measure_latency(model, test_records, n_runs=self.latency_n_runs)
+            latency = measure_latency(
+                model, 
+                test_records, 
+                n_runs=self.latency_n_runs,
+                mode=self.latency_mode,
+            )
         
         # Compute main metrics
         metrics = compute_all_metrics(
