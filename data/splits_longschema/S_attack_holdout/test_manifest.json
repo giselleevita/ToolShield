@@ -1,0 +1,28 @@
+{
+  "protocol": "S_attack_holdout",
+  "seed": 2026,
+  "split_name": "test",
+  "total_records": 225,
+  "label_counts": {
+    "0": 100,
+    "1": 125
+  },
+  "family_counts": {
+    "AF4": 125,
+    "benign": 100
+  },
+  "tool_counts": {
+    "exportReport": 52,
+    "getCustomerRecord": 37,
+    "resetUserMFA": 44,
+    "searchTickets": 92
+  },
+  "template_ids": [
+    "af4_document_injection_01",
+    "af4_document_injection_02",
+    "af4_tool_result_01",
+    "af4_tool_result_02",
+    "benign_generic_01",
+    "benign_ticket_search_02"
+  ]
+}

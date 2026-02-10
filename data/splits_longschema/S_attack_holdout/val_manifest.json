@@ -1,0 +1,28 @@
+{
+  "protocol": "S_attack_holdout",
+  "seed": 2026,
+  "split_name": "val",
+  "total_records": 194,
+  "label_counts": {
+    "0": 100,
+    "1": 94
+  },
+  "family_counts": {
+    "AF1": 63,
+    "AF3": 31,
+    "benign": 100
+  },
+  "tool_counts": {
+    "exportReport": 77,
+    "getCustomerRecord": 72,
+    "resetUserMFA": 21,
+    "searchTickets": 24
+  },
+  "template_ids": [
+    "af1_instruction_override_01",
+    "af1_jailbreak_01",
+    "af3_hijack_mfa_02",
+    "benign_customer_lookup_02",
+    "benign_report_export_02"
+  ]
+}

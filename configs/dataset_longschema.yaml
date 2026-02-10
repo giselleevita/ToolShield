@@ -1,0 +1,41 @@
+# Dataset Configuration — Long Schema (Enterprise Stress Test)
+# =============================================================
+# Identical to configs/dataset.yaml EXCEPT:
+#   inflate_schema_to: 4000 — inflates each tool_schema JSON to ~4000 chars
+#
+# Purpose: simulate enterprise-scale tool schemas (dozens of parameters,
+# nested objects, long descriptions) that create truncation pressure
+# under fixed max_length token budgets.
+#
+# This config is used ONLY for the longschema stress experiment.
+# The underlying data (labels, prompts, attacks) is identical.
+
+# Global random seed for reproducibility
+seed: 1337
+
+# Total number of samples to generate
+n_samples: 1000
+
+# Schema inflation target (characters of serialised JSON)
+# Enterprise tools typically have 3000-8000 char schemas.
+inflate_schema_to: 4000
+
+# Output configuration
+output:
+  dir: "data/"
+  dataset_file: "dataset_longschema.jsonl"
+  manifest_file: "manifest_longschema.json"
+
+# Dataset properties (identical to baseline — DO NOT CHANGE)
+properties:
+  language: "en"
+  attack_families:
+    - AF1
+    - AF2
+    - AF3
+    - AF4
+  tools:
+    - getCustomerRecord
+    - searchTickets
+    - exportReport
+    - resetUserMFA

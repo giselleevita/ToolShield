@@ -143,6 +143,47 @@ make test-splits
 pytest tests/ -v --cov=src/toolshield
 ```
 
+## Long-Schema Stress Test (Enterprise Truncation Bias)
+
+An ablation study comparing **naive right-truncation** vs. **prompt-preserving truncation**
+under enterprise-length tool schemas (~4 000 chars). This is the key experiment backing
+the thesis claim that naive tokenization silently destroys the prompt signal.
+
+```bash
+# Run the full pipeline (data -> splits -> train -> eval -> stats -> verify)
+make compare_truncation_longschema
+
+# Verify all artifacts are complete and consistent
+make verify_longschema_results
+```
+
+### Verification Output
+
+```
+$ make verify_longschema_results
+Verifying long-schema bundle: data/reports/experiments_longschema
+  Protocols: ['S_random', 'S_attack_holdout']
+  Expected seeds: [0, 1, 2] (n=3)
+
+[OK] summary.csv — all models present, n_seeds correct, ROC-AUC bounds satisfied
+[OK] truncation_stats.csv — truncation patterns match expected values
+[OK] split hygiene — all checks PASS, guards.json empty
+[OK] appendix example — contains both strategy comparisons
+[OK] raw metrics present — seed_0/S_attack_holdout has both model metrics
+
+All 5 verification checks passed.
+```
+
+### Key Results
+
+| Strategy | ROC-AUC (S_attack_holdout) | Prompt Retention |
+|----------|---------------------------|-----------------|
+| `keep_prompt` | **0.998** | 100% |
+| `naive` | 0.455 | 0% |
+
+All artifacts are in `data/reports/experiments_longschema/`. The raw verification
+log is saved at `data/reports/experiments_longschema/verification_output.txt`.
+
 ## License
 
 MIT License - See LICENSE file for details.

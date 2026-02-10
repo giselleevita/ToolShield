@@ -1,0 +1,31 @@
+{
+  "protocol": "S_random",
+  "seed": 2026,
+  "split_name": "test",
+  "total_records": 224,
+  "label_counts": {
+    "0": 100,
+    "1": 124
+  },
+  "family_counts": {
+    "AF1": 31,
+    "AF2": 31,
+    "AF3": 31,
+    "AF4": 31,
+    "benign": 100
+  },
+  "tool_counts": {
+    "exportReport": 45,
+    "getCustomerRecord": 45,
+    "resetUserMFA": 91,
+    "searchTickets": 43
+  },
+  "template_ids": [
+    "af1_instruction_override_02",
+    "af2_exfil_api_01",
+    "af3_hijack_mfa_02",
+    "af4_tool_result_02",
+    "benign_generic_01",
+    "benign_mfa_reset_02"
+  ]
+}

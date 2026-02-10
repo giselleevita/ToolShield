@@ -4,7 +4,8 @@
         data splits train eval demo verify aggregate aggregate-strict \
         full_run full_run_quick full_run_fast \
         trunc_stats compare_truncation \
-        data_longschema splits_longschema compare_truncation_longschema trunc_stats_longschema
+        data_longschema splits_longschema compare_truncation_longschema trunc_stats_longschema \
+        verify_longschema_results
 
 # Default target
 .DEFAULT_GOAL := help
@@ -305,6 +306,12 @@ compare_truncation_longschema: ## Full long-schema ablation: data → splits →
 	@echo " Long-Schema Stress Test COMPLETE"
 	@echo " Results: $(DATA_DIR)/reports/experiments_longschema/"
 	@echo "═══════════════════════════════════════════════════════════"
+
+verify_longschema_results: ## Verify long-schema experiment bundle completeness and consistency
+	$(PYTHON) scripts/verify_experiments_longschema_bundle.py \
+		--root $(DATA_DIR)/reports/experiments_longschema \
+		--expect-seeds 0 1 2 \
+		--protocols S_random S_attack_holdout
 
 #------------------------------------------------------------------------------
 # Full Pipeline (Legacy)

@@ -1,0 +1,46 @@
+# Context-Augmented Transformer — NAIVE Truncation (Ablation Baseline)
+# ====================================================================
+# Identical hyperparameters to context_transformer.yaml (keep_prompt).
+# Only difference: truncate_strategy set to "naive" (right-truncation).
+#
+# This config exists solely for the controlled ablation study:
+#   H1: Naive truncation drops prompt tokens under long schemas.
+#   H2: keep_prompt improves security KPIs under distribution shift.
+
+model_type: context_transformer
+
+# Base model from HuggingFace
+model_name: "distilroberta-base"
+
+# Random seed for reproducibility
+seed: 42
+
+# Context augmentation parameters
+include_schema: true
+include_description: true
+max_schema_length: 200
+
+# Truncation strategy — NAIVE (concatenate + right-truncate)
+truncate_strategy: "naive"
+
+# These fields are kept for config parity but have no effect under naive
+prompt_min_tokens: 128
+prompt_side: "tail"
+
+# Tokenization parameters
+max_length: 256
+
+# Training parameters
+batch_size: 8
+learning_rate: 2.0e-5
+num_epochs: 3
+warmup_steps: 20
+weight_decay: 0.01
+
+# Evaluation strategy
+eval_strategy: "epoch"
+save_strategy: "epoch"
+load_best_model_at_end: true
+metric_for_best_model: "roc_auc"
+
+# early_stopping_patience: 1   # uncomment only if your trainer supports it

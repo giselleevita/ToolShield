@@ -1,0 +1,107 @@
+{
+  "protocol": "S_random",
+  "seed": 2026,
+  "splits": {
+    "train": {
+      "protocol": "S_random",
+      "seed": 2026,
+      "split_name": "train",
+      "total_records": 601,
+      "label_counts": {
+        "0": 350,
+        "1": 251
+      },
+      "family_counts": {
+        "AF1": 63,
+        "AF2": 63,
+        "AF3": 63,
+        "AF4": 62,
+        "benign": 350
+      },
+      "tool_counts": {
+        "exportReport": 128,
+        "getCustomerRecord": 176,
+        "resetUserMFA": 126,
+        "searchTickets": 171
+      },
+      "template_ids": [
+        "af1_instruction_override_01",
+        "af1_jailbreak_02",
+        "af2_exfil_email_01",
+        "af2_exfil_email_02",
+        "af3_hijack_export_02",
+        "af3_hijack_mfa_01",
+        "af4_document_injection_01",
+        "af4_document_injection_02",
+        "benign_customer_lookup_01",
+        "benign_customer_lookup_02",
+        "benign_generic_02",
+        "benign_mfa_reset_01",
+        "benign_report_export_01",
+        "benign_ticket_search_01",
+        "benign_ticket_search_02"
+      ]
+    },
+    "val": {
+      "protocol": "S_random",
+      "seed": 2026,
+      "split_name": "val",
+      "total_records": 175,
+      "label_counts": {
+        "0": 50,
+        "1": 125
+      },
+      "family_counts": {
+        "AF1": 31,
+        "AF2": 31,
+        "AF3": 31,
+        "AF4": 32,
+        "benign": 50
+      },
+      "tool_counts": {
+        "exportReport": 83,
+        "getCustomerRecord": 37,
+        "resetUserMFA": 20,
+        "searchTickets": 35
+      },
+      "template_ids": [
+        "af1_jailbreak_01",
+        "af2_exfil_api_02",
+        "af3_hijack_export_01",
+        "af4_tool_result_01",
+        "benign_report_export_02"
+      ]
+    },
+    "test": {
+      "protocol": "S_random",
+      "seed": 2026,
+      "split_name": "test",
+      "total_records": 224,
+      "label_counts": {
+        "0": 100,
+        "1": 124
+      },
+      "family_counts": {
+        "AF1": 31,
+        "AF2": 31,
+        "AF3": 31,
+        "AF4": 31,
+        "benign": 100
+      },
+      "tool_counts": {
+        "exportReport": 45,
+        "getCustomerRecord": 45,
+        "resetUserMFA": 91,
+        "searchTickets": 43
+      },
+      "template_ids": [
+        "af1_instruction_override_02",
+        "af2_exfil_api_01",
+        "af3_hijack_mfa_02",
+        "af4_tool_result_02",
+        "benign_generic_01",
+        "benign_mfa_reset_02"
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "protocol": "S_random",
+  "seed": 2026,
+  "split_name": "val",
+  "total_records": 175,
+  "label_counts": {
+    "0": 50,
+    "1": 125
+  },
+  "family_counts": {
+    "AF1": 31,
+    "AF2": 31,
+    "AF3": 31,
+    "AF4": 32,
+    "benign": 50
+  },
+  "tool_counts": {
+    "exportReport": 83,
+    "getCustomerRecord": 37,
+    "resetUserMFA": 20,
+    "searchTickets": 35
+  },
+  "template_ids": [
+    "af1_jailbreak_01",
+    "af2_exfil_api_02",
+    "af3_hijack_export_01",
+    "af4_tool_result_01",
+    "benign_report_export_02"
+  ]
+}

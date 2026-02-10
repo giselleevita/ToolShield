@@ -1,0 +1,86 @@
+# Scored Heuristic Classifier Configuration
+# ==========================================
+# Unlike the binary heuristic, this outputs continuous scores in [0,1]
+# enabling meaningful threshold selection under FPR budgets.
+#
+# Scoring formula:
+#   raw = w_keyword * kw_hits + w_pattern * pat_hits - w_allowlist * allow_hits
+#   score = sigmoid(raw / temperature)
+#
+# SCIENTIFIC NOTE: This configuration is HOLDOUT-SAFE (no tool-specific keywords).
+
+model_type: heuristic_score
+
+# Case sensitivity for keyword matching
+case_sensitive: false
+
+# Scoring weights
+weights:
+  w_keyword: 1.0   # Weight per distinct keyword match
+  w_pattern: 2.0   # Weight per distinct pattern match (structural = stronger signal)
+  w_allowlist: 1.0 # Weight reduction per allowlist match
+
+# Sigmoid temperature (higher = smoother gradient, lower = sharper threshold)
+temperature: 3.0
+
+# Suspicious keywords (holdout-safe, NO tool names)
+suspicious_keywords:
+  # Instruction override patterns
+  - "ignore previous"
+  - "ignore all"
+  - "disregard"
+  - "forget"
+  - "override"
+  - "bypass"
+  - "skip"
+  - "new instructions"
+  - "new directive"
+  - "system override"
+  - "admin mode"
+  - "maintenance mode"
+  - "debug mode"
+  - "elevated privileges"
+  # Jailbreak patterns
+  - "do anything now"
+  - "unrestricted"
+  - "no restrictions"
+  - "pretend"
+  - "roleplay"
+  - "for testing"
+  # Exfiltration patterns
+  - "send to"
+  - "send a copy"
+  - "forward to"
+  - "email to"
+  - "post to"
+  - "webhook"
+  - "external"
+  - "mirror"
+  - "transmit"
+  # Tool hijacking patterns (generic, no tool names)
+  - "redirect to"
+  - "call instead"
+  # Indirect injection markers
+  - "auto-approve"
+  - "hidden"
+  - "internal instruction"
+  - "system note"
+
+# Regex patterns for structural indicators
+suspicious_patterns:
+  - "\\[\\[.*ADMIN.*\\]\\]"
+  - "\\{\\{.*SYSTEM.*\\}\\}"
+  - "<<<.*>>>"
+  - "---END.*---"
+  - "BEGIN.*COMMAND"
+  - "\\[INTERNAL\\]"
+  - "\\[PRIORITY\\s*OVERRIDE\\]"
+  - "<!--.*-->"
+  - "auth_level\\s*=\\s*admin"
+  - "restrictions\\s*=\\s*none"
+
+# Allowlist patterns (narrow, safe)
+allowlist_patterns:
+  - "ticket\\s*#?\\s*\\w+-\\d+"
+  - "customer\\s*(id|ID)\\s*:?\\s*\\w+-?\\d+"
+  - "\\b(explain|definition|what\\s+is|how\\s+does|mitigation|defense|research|paper)\\b.*\\b(prompt\\s+injection|jailbreak|llm\\s+security)\\b"

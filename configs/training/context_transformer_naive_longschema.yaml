@@ -1,0 +1,46 @@
+# Context-Augmented Transformer — NAIVE Truncation + Long Schema Stress
+# =====================================================================
+# Same hyperparameters as context_transformer_naive.yaml EXCEPT:
+#   max_schema_length: 5000 (no character-level pre-truncation)
+#
+# Used with the longschema dataset (inflate_schema_to=4000 chars).
+# Enterprise schemas reach the tokenizer at full length, creating
+# truncation pressure under the fixed max_length=256 token budget.
+
+model_type: context_transformer
+
+# Base model from HuggingFace
+model_name: "distilroberta-base"
+
+# Random seed for reproducibility
+seed: 42
+
+# Context augmentation parameters
+include_schema: true
+include_description: true
+max_schema_length: 5000
+
+# Truncation strategy — NAIVE (concatenate + right-truncate)
+truncate_strategy: "naive"
+
+# These fields are kept for config parity but have no effect under naive
+prompt_min_tokens: 128
+prompt_side: "tail"
+
+# Tokenization parameters
+max_length: 256
+
+# Training parameters
+batch_size: 8
+learning_rate: 2.0e-5
+num_epochs: 3
+warmup_steps: 20
+weight_decay: 0.01
+
+# Evaluation strategy
+eval_strategy: "epoch"
+save_strategy: "epoch"
+load_best_model_at_end: true
+metric_for_best_model: "roc_auc"
+
+# early_stopping_patience: 1   # uncomment only if your trainer supports it

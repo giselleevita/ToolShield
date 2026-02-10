@@ -1,0 +1,90 @@
+# Heuristic Classifier Configuration (H2: Policy Keyword Heuristic)
+# ==================================================================
+# Rule-based classifier WITH tool-aware keywords.
+#
+# SCIENTIFIC NOTE: This variant includes tool-specific keywords as an ABLATION.
+# Use H1 (heuristic.yaml) as the primary baseline for fair holdout evaluation.
+# Report H2 in appendix to show effect of tool-specific knowledge.
+#
+# WARNING: Using this for tool-holdout evaluation is "cheating" because the
+# detector has hardcoded knowledge of the held-out tool names.
+
+model_type: heuristic
+
+# Case sensitivity for keyword matching
+case_sensitive: false
+
+# Suspicious keywords INCLUDING tool-specific names
+suspicious_keywords:
+  # === Generic patterns (same as H1) ===
+  # Instruction override patterns
+  - "ignore previous"
+  - "ignore all"
+  - "disregard"
+  - "forget"
+  - "override"
+  - "bypass"
+  - "skip"
+  - "new instructions"
+  - "new directive"
+  - "system override"
+  - "admin mode"
+  - "maintenance mode"
+  - "debug mode"
+  - "elevated privileges"
+  # Jailbreak patterns
+  - "do anything now"
+  - "unrestricted"
+  - "no restrictions"
+  - "pretend"
+  - "roleplay"
+  - "for testing"
+  # Exfiltration patterns
+  - "send to"
+  - "send a copy"
+  - "forward to"
+  - "email to"
+  - "post to"
+  - "webhook"
+  - "external"
+  - "mirror"
+  - "transmit"
+  # Tool hijacking patterns (generic)
+  - "redirect to"
+  - "call instead"
+  # Indirect injection markers
+  - "auto-approve"
+  - "hidden"
+  - "internal instruction"
+  - "system note"
+  
+  # === Tool-specific keywords (H2 only) ===
+  # These make holdout evaluation unfair but show policy detection capability
+  - "reset mfa"
+  - "resetusermfa"
+  - "reset user mfa"
+  - "export report"
+  - "exportreport"
+  - "get customer"
+  - "getcustomerrecord"
+  - "search tickets"
+  - "searchtickets"
+
+# Regex patterns for structural indicators (same as H1)
+suspicious_patterns:
+  - "\\[\\[.*ADMIN.*\\]\\]"
+  - "\\{\\{.*SYSTEM.*\\}\\}"
+  - "<<<.*>>>"
+  - "---END.*---"
+  - "BEGIN.*COMMAND"
+  - "\\[INTERNAL\\]"
+  - "\\[PRIORITY\\s*OVERRIDE\\]"
+  - "<!--.*-->"
+  - "auth_level\\s*=\\s*admin"
+  - "restrictions\\s*=\\s*none"
+
+# Allowlist patterns (same as H1 - narrow)
+allowlist_patterns:
+  - "ticket\\s*#?\\s*\\w+-\\d+"
+  - "customer\\s*(id|ID)\\s*:?\\s*\\w+-?\\d+"
+  - "\\b(explain|definition|what\\s+is|how\\s+does|mitigation|defense|research|paper)\\b.*\\b(prompt\\s+injection|jailbreak|llm\\s+security)\\b"

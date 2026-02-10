@@ -1,0 +1,39 @@
+{
+  "protocol": "S_attack_holdout",
+  "seed": 2026,
+  "split_name": "train",
+  "total_records": 581,
+  "label_counts": {
+    "0": 300,
+    "1": 281
+  },
+  "family_counts": {
+    "AF1": 62,
+    "AF2": 125,
+    "AF3": 94,
+    "benign": 300
+  },
+  "tool_counts": {
+    "exportReport": 127,
+    "getCustomerRecord": 149,
+    "resetUserMFA": 172,
+    "searchTickets": 133
+  },
+  "template_ids": [
+    "af1_instruction_override_02",
+    "af1_jailbreak_02",
+    "af2_exfil_api_01",
+    "af2_exfil_api_02",
+    "af2_exfil_email_01",
+    "af2_exfil_email_02",
+    "af3_hijack_export_01",
+    "af3_hijack_export_02",
+    "af3_hijack_mfa_01",
+    "benign_customer_lookup_01",
+    "benign_generic_02",
+    "benign_mfa_reset_01",
+    "benign_mfa_reset_02",
+    "benign_report_export_01",
+    "benign_ticket_search_01"
+  ]
+}
