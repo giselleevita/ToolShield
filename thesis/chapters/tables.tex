@@ -11,6 +11,7 @@
 \centering
 \caption{Model performance across split protocols on the standard dataset. Higher ROC-AUC and lower FPR@TPR are better.}
 \label{tab:main-results}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{llcccc}
 \toprule
 Protocol & Model & ROC-AUC & PR-AUC & FPR@TPR90 & FPR@TPR95 \\
@@ -26,7 +27,7 @@ S\_random & heuristic\_score & 0.714 & 0.872 & 1.000 & 1.000 \\
 S\_random & tfidf\_lr & 1.000 & 1.000 & 0.000 & 0.000 \\
 S\_random & transformer & 0.988 & 0.991 & 0.020 & 0.200 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 %----------------------------------------------------------------------
@@ -36,6 +37,7 @@ S\_random & transformer & 0.988 & 0.991 & 0.020 & 0.200 \\
 \centering
 \caption{ASR reduction at different TPR operating points on the standard dataset. Higher is better.}
 \label{tab:asr-results}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{llcc}
 \toprule
 Protocol & Model & ASR Red.@TPR90 & ASR Red.@TPR95 \\
@@ -51,7 +53,7 @@ S\_random & heuristic\_score & 100.0\% & 100.0\% \\
 S\_random & tfidf\_lr & 90.3\% & 96.8\% \\
 S\_random & transformer & 94.4\% & 100.0\% \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 %----------------------------------------------------------------------
@@ -61,6 +63,7 @@ S\_random & transformer & 94.4\% & 100.0\% \\
 \centering
 \caption{Performance at FPR budgets (1\%, 3\%, 5\%) on the standard dataset. Threshold selected on validation set.}
 \label{tab:budget-results}
+\footnotesize
 \begin{tabular}{llccc}
 \toprule
 Protocol & Model & TPR@1\% & TPR@3\% & TPR@5\% \\
