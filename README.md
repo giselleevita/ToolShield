@@ -143,19 +143,18 @@ make test-splits
 pytest tests/ -v --cov=src/toolshield
 ```
 
+## Reproducing Results
+
+```bash
+make compare_truncation_longschema
+make verify_longschema_results
+```
+
 ## Long-Schema Stress Test (Enterprise Truncation Bias)
 
 An ablation study comparing **naive right-truncation** vs. **prompt-preserving truncation**
 under enterprise-length tool schemas (~4 000 chars). This is the key experiment backing
 the thesis claim that naive tokenization silently destroys the prompt signal.
-
-```bash
-# Run the full pipeline (data -> splits -> train -> eval -> stats -> verify)
-make compare_truncation_longschema
-
-# Verify all artifacts are complete and consistent
-make verify_longschema_results
-```
 
 ### Verification Output
 
