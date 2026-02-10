@@ -1,9 +1,9 @@
-\section{Implementation}
+\chapter{Implementation}
 \label{sec:implementation}
 
 This chapter describes the technical implementation of ToolShield, including the command-line interface, dataset pipeline, training and evaluation infrastructure, experiment organization, and reproducibility measures. The implementation is designed to support controlled, repeatable experiments and to produce thesis-ready artifacts.
 
-\subsection{CLI Architecture}
+\section{CLI Architecture}
 \label{subsec:cli_architecture}
 
 ToolShield is implemented as a Python package (\texttt{toolshield}) with a unified command-line interface. The CLI provides subcommands that map directly to pipeline stages:
@@ -19,16 +19,16 @@ ToolShield is implemented as a Python package (\texttt{toolshield}) with a unifi
 
 Each subcommand accepts configuration via command-line arguments and, where applicable, YAML configuration files stored in the \texttt{configs/} directory. This design ensures that every pipeline stage is individually invocable and parameterized, supporting both interactive use and automated orchestration through Makefile targets.
 
-\subsection{Dataset Pipeline}
+\section{Dataset Pipeline}
 \label{subsec:dataset_pipeline}
 
-\subsubsection{Dataset generation}
+\subsection{Dataset generation}
 
 The dataset generation stage produces a JSONL file (\texttt{data/dataset.jsonl}) containing labeled records. Each record includes a user prompt, tool metadata (name, schema, description), role framing, label, and attack family annotation. Generation is controlled by a YAML configuration file (\texttt{configs/dataset.yaml}) specifying the number of samples, attack family distribution, tool set, and random seed.
 
 A companion manifest file (\texttt{data/manifest.json}) is written alongside the dataset, recording sample counts, label distribution, seed, and generation timestamp.
 
-\subsubsection{Split generation}
+\subsection{Split generation}
 
 The split stage partitions the dataset into \texttt{train.jsonl}, \texttt{val.jsonl}, and \texttt{test.jsonl} under a specified protocol. Split constraints are enforced programmatically:
 
@@ -40,13 +40,13 @@ The split stage partitions the dataset into \texttt{train.jsonl}, \texttt{val.js
 
 Each protocol writes its splits to a separate directory (e.g., \texttt{data/splits/S\_random/}).
 
-\subsubsection{Long-schema inflation}
+\subsection{Long-schema inflation}
 
 For the enterprise truncation stress test, the script \texttt{scripts/inflate\_schemas.py} transforms the base dataset by inflating tool schemas to a target character length (approximately 4\,000 characters). The inflated dataset is written to \texttt{data/dataset\_longschema.jsonl}, and subsequent splits are generated from it into \texttt{data/splits\_longschema/}.
 
 The inflation process appends realistic enterprise-style properties (nested objects, enumerated constraints, long descriptions) to each schema, controlled by a fixed random seed for reproducibility.
 
-\subsection{Training Pipeline}
+\section{Training Pipeline}
 \label{subsec:training_pipeline}
 
 Training is invoked via \texttt{toolshield train} and configured through per-model YAML files in \texttt{configs/training/}. Each configuration specifies:
@@ -62,10 +62,10 @@ For the truncation ablation, separate configuration files exist for each strateg
 
 Trained model artifacts (weights, tokenizer, and configuration) are saved to the experiment output directory alongside evaluation results.
 
-\subsection{Evaluation and Reporting Pipeline}
+\section{Evaluation and Reporting Pipeline}
 \label{subsec:evaluation_pipeline_impl}
 
-\subsubsection{Metrics computation}
+\subsection{Metrics computation}
 
 The evaluation stage (\texttt{toolshield eval}) loads a trained model and test split, runs inference, and computes the following metrics:
 
@@ -79,7 +79,7 @@ The evaluation stage (\texttt{toolshield eval}) loads a trained model and test s
 
 Results are written to a structured \texttt{metrics.json} file in the model output directory. A degenerate-score warning is included if the model produces fewer than three unique score values, which can indicate training failure or trivial predictions.
 
-\subsubsection{Aggregation}
+\subsection{Aggregation}
 
 The script \texttt{scripts/aggregate\_experiments.py} discovers all \texttt{metrics.json} files under an experiment root directory, parses them, deduplicates by (protocol, model, seed) key, and produces:
 
@@ -91,22 +91,22 @@ The script \texttt{scripts/aggregate\_experiments.py} discovers all \texttt{metr
 
 Aggregation includes validation checks for missing seeds, missing protocols, and absent transformer models, reporting warnings where applicable.
 
-\subsubsection{LaTeX table generation}
+\subsection{LaTeX table generation}
 
 The script \texttt{scripts/generate\_latex\_from\_summary.py} reads \texttt{summary.csv} (and optionally \texttt{truncation\_stats.csv}) and generates LaTeX table source code suitable for direct inclusion in the thesis. Tables are formatted with consistent metric naming and numerical precision.
 
-\subsubsection{Truncation statistics}
+\subsection{Truncation statistics}
 
 The script \texttt{scripts/report\_truncation\_stats.py} computes per-strategy truncation statistics from the split data, including prompt retention ratios, schema token distributions, and per-sample truncation counts. It produces \texttt{truncation\_stats.csv}, \texttt{truncation\_stats.json}, and retention visualization figures.
 
-\subsection{Experiment Automation}
+\section{Experiment Automation}
 \label{subsec:experiment_automation}
 
-\subsubsection{Ablation runner}
+\subsection{Ablation runner}
 
 The script \texttt{scripts/run\_truncation\_ablation.py} orchestrates the full truncation ablation study. It iterates over specified seeds, protocols, and model configurations, invoking training and evaluation for each combination. The script accepts parameters for experiment tag, splits directory, and model set, enabling reuse across standard and long-schema experiments.
 
-\subsubsection{Makefile targets}
+\subsection{Makefile targets}
 
 The project \texttt{Makefile} provides targets that compose the full pipeline. Key targets include:
 
@@ -116,7 +116,7 @@ The project \texttt{Makefile} provides targets that compose the full pipeline. K
     \item \texttt{make test}: executes the full test suite.
 \end{itemize}
 
-\subsection{Experiment Folder Structure}
+\section{Experiment Folder Structure}
 \label{subsec:folder_structure}
 
 Experiment outputs follow a hierarchical directory structure organized by seed, protocol, and model:
@@ -154,24 +154,24 @@ data/reports/experiments_longschema/
 
 This structure enables the aggregation script to discover all per-seed results automatically by traversing the directory tree. Aggregated outputs and verification artifacts are placed at the experiment root level.
 
-\subsection{Reproducibility Measures}
+\section{Reproducibility Measures}
 \label{subsec:reproducibility_impl}
 
-\subsubsection{Seed control}
+\subsection{Seed control}
 
 All stochastic operations use explicit seeds. Dataset generation uses a configurable seed (default: 1337). Split generation uses a separate seed (default: 2026). Model training seeds are passed as command-line arguments (typically 0, 1, 2). Seeds propagate to Python's \texttt{random} module, NumPy, and PyTorch to ensure deterministic behavior.
 
-\subsubsection{Deterministic splits}
+\subsection{Deterministic splits}
 
 Split generation enforces template-level disjointness: no \texttt{template\_id} appears in more than one split. For \texttt{S\_attack\_holdout}, AF4 samples are deterministically assigned to test. The split verification script \texttt{scripts/verify\_longschema\_splits.py} checks these constraints and produces \texttt{split\_hygiene.md}, \texttt{split\_hygiene.csv}, and \texttt{guards.json}.
 
-\subsubsection{Run manifests and environment freeze}
+\subsection{Run manifests and environment freeze}
 
 The script \texttt{scripts/write\_run\_manifest.py} captures the exact git commit hash, executed commands, dataset configuration, and model settings at experiment time. The resulting \texttt{run\_manifest.md} provides a complete provenance record.
 
 The Python environment is captured via \texttt{pip freeze} and saved to \texttt{data/reports/environment\_freeze.txt}, recording exact package versions (torch, transformers, scikit-learn, etc.).
 
-\subsubsection{Verification scripts}
+\subsection{Verification scripts}
 
 Two verification scripts ensure experimental integrity:
 
@@ -180,7 +180,7 @@ Two verification scripts ensure experimental integrity:
     \item \texttt{scripts/verify\_experiments\_longschema\_bundle.py}: validates the complete experiment bundle by checking that all required artifact files exist, that \texttt{summary.csv} contains expected models with correct seed counts, that ROC-AUC values satisfy regression bounds (keep\_prompt $\geq 0.95$, naive $\leq 0.60$), that truncation statistics match expected patterns (naive: 100\% truncation; keep\_prompt: 0\% truncation), that \texttt{split\_hygiene.md} contains no failures and \texttt{guards.json} is empty, and that raw \texttt{metrics.json} files exist for the reference seed. The script exits with code~1 on any failure and prints diagnostic messages.
 \end{itemize}
 
-\subsection{Artifacts and Experiment Bundle}
+\section{Artifacts and Experiment Bundle}
 \label{subsec:artifacts_bundle}
 
 The file \texttt{THESIS\_ARTIFACTS.md} in the repository root serves as the authoritative artifact index for the thesis. It lists the exact file paths of all artifacts required to reproduce and verify the reported results, organized by purpose:

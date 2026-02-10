@@ -1,4 +1,4 @@
-\section{Results}
+\chapter{Results}
 \label{sec:results}
 
 This chapter presents the empirical evaluation of ToolShield across multiple split protocols and model families. We report performance using ROC-AUC and PR-AUC as threshold-independent metrics, and FPR@TPR90/95 as operating-point metrics relevant for deployment. Additionally, we evaluate the reduction in Attack Success Rate (ASR reduction) under controlled false-positive budgets and analyze inference latency.
@@ -8,7 +8,7 @@ Neural model results (context transformer variants) are aggregated over $n{=}3$ 
 
 All reported values are taken directly from \texttt{summary.csv} and \texttt{truncation\_stats.csv} in the thesis artifact bundle (Table~\ref{tab:main-results}, Table~\ref{tab:longschema-stress}).
 
-\subsection{Experimental Protocols}
+\section{Experimental Protocols}
 \label{subsec:protocols}
 
 We evaluate models under the following split protocols:
@@ -23,12 +23,12 @@ The \texttt{S\_attack\_holdout} protocol is intended to measure generalization t
 \paragraph{Note on \texttt{S\_tool\_holdout}.}
 A third protocol, \texttt{S\_tool\_holdout}, excludes all samples of a specific tool from training. In some configurations, this yields a single-class training split (e.g., only benign samples for that tool), which prevents supervised models from converging meaningfully. Where this occurs, the affected model--protocol combination is omitted from the results rather than reported with degenerate metrics. This limitation is inherent to the synthetic dataset's tool--label distribution and does not affect the \texttt{S\_random} or \texttt{S\_attack\_holdout} evaluations.
 
-\subsection{Baseline Model Performance on the Standard Dataset}
+\section{Baseline Model Performance on the Standard Dataset}
 \label{subsec:baseline_standard}
 
 Table~\ref{tab:main-results} summarizes performance on the standard dataset. Overall, nearly all models achieve strong discrimination, with transformer-based approaches approaching perfect classification.
 
-\subsubsection{\texttt{S\_random} Results}
+\subsection{\texttt{S\_random} Results}
 
 On \texttt{S\_random}, multiple models achieve near-ceiling performance:
 
@@ -42,7 +42,7 @@ The context-aware transformer achieves perfect ranking performance on this split
 
 In contrast, the \texttt{heuristic} baseline performs substantially worse with ROC-AUC $=0.7137$, despite a relatively high PR-AUC $=0.8722$. This indicates that while heuristic rules can capture many attacks, they do not provide reliable ranking across all samples.
 
-\subsubsection{\texttt{S\_attack\_holdout} Results}
+\subsection{\texttt{S\_attack\_holdout} Results}
 
 Under \texttt{S\_attack\_holdout}, performance remains near-perfect for both context transformer variants:
 
@@ -53,12 +53,12 @@ Under \texttt{S\_attack\_holdout}, performance remains near-perfect for both con
 
 These results show that, in the standard dataset configuration, both truncation strategies behave similarly. This is explained by the relatively small configured schema length limit (\texttt{max\_schema\_length=200} characters), which prevents the tool schema from occupying most of the token budget.
 
-\subsection{Attack Success Rate (ASR) Reduction}
+\section{Attack Success Rate (ASR) Reduction}
 \label{subsec:asr_reduction}
 
 We report ASR reduction at two operating points: TPR90 and TPR95 (Table~\ref{tab:asr-results}). ASR reduction measures how effectively the detector blocks malicious prompts when deployed as a binary gate before tool execution. Budget-constrained threshold selection results are presented in Table~\ref{tab:budget-results}.
 
-\subsubsection{\texttt{S\_random}}
+\subsection{\texttt{S\_random}}
 
 On \texttt{S\_random}, the context transformer variants achieve ASR reduction between $92.7\%$ and $94.4\%$:
 
@@ -69,7 +69,7 @@ On \texttt{S\_random}, the context transformer variants achieve ASR reduction be
 
 This indicates that under the standard schema size setting, both strategies remain highly effective at reducing successful attacks. Differences are small and likely not statistically meaningful at this dataset scale.
 
-\subsubsection{\texttt{S\_attack\_holdout}}
+\subsection{\texttt{S\_attack\_holdout}}
 
 Under distribution shift (\texttt{S\_attack\_holdout}), ASR reduction remains strong:
 
@@ -80,7 +80,7 @@ Under distribution shift (\texttt{S\_attack\_holdout}), ASR reduction remains st
 
 This confirms that ToolShield generalizes well to the held-out AF4 attack family when schemas remain short enough to avoid truncation bias.
 
-\subsection{Latency Measurements}
+\section{Latency Measurements}
 \label{subsec:latency}
 
 Inference latency was measured in warm mode. Table~\ref{tab:latency-results} summarizes P50 and P95 latencies.
@@ -95,7 +95,7 @@ On the standard dataset, the following latency trends are observed:
 
 Thus, prompt-preserving truncation introduces additional runtime overhead, roughly increasing P50 latency from ${\sim}\,2.7$\,s to ${\sim}\,4.7$\,s in this environment. This is expected, since the \texttt{keep\_prompt} strategy performs two-pass tokenization and explicit budget allocation.
 
-\subsection{Truncation Ablation on the Standard Dataset}
+\section{Truncation Ablation on the Standard Dataset}
 \label{subsec:truncation_ablation_standard}
 
 To evaluate whether truncation strategy affects detection performance, we compare two configurations:
@@ -109,7 +109,7 @@ On the standard dataset, both strategies yield nearly identical predictive perfo
 
 This suggests that truncation bias is not visible in this dataset configuration due to the hard schema length constraint (\texttt{max\_schema\_length=200}), which prevents context fields from dominating the model input.
 
-\subsubsection{Enterprise long-schema stress test}
+\subsection{Enterprise long-schema stress test}
 \label{subsec:longschema_stress_test}
 
 To evaluate truncation behaviour under more realistic enterprise tool schemas, we constructed a long-schema dataset variant where tool schemas were inflated to approximately 4\,000 characters, corresponding to approximately 840 schema tokens on average (Table~\ref{tab:longschema-stress}).
@@ -171,12 +171,12 @@ The \texttt{keep\_prompt} strategy avoids this failure by enforcing a minimum pr
 
 This result is not a minor performance difference but a qualitative shift: the same model architecture changes from near-perfect detection to near-random guessing depending only on truncation strategy.
 
-\subsection{Verification Artifacts}
+\section{Verification Artifacts}
 \label{subsec:verification_artifacts}
 
 Split integrity for both protocols is documented in \texttt{split\_hygiene.md}, which confirms that no template leakage occurred between splits and that the AF4 holdout constraint was enforced correctly. The companion file \texttt{guards.json} contains an empty list, indicating that no class-balance warnings were raised during verification. The automated experiment bundle verification script (\texttt{verify\_experiments\_longschema\_bundle.py}) checks artifact completeness, truncation invariant consistency, and ROC-AUC regression bounds; its output is recorded in \texttt{verification\_output.txt}.
 
-\subsection{Key Findings}
+\section{Key Findings}
 \label{subsec:key_findings}
 
 \begin{itemize}

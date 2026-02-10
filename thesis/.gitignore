@@ -2,10 +2,16 @@
 *.aux
 *.bbl
 *.blg
+*.bcf
 *.fdb_latexmk
 *.fls
 *.log
 *.out
 *.toc
+*.lof
+*.lot
+*.run.xml
+*.xmpdata
 *.synctex.gz
 *.pdf
+pdfa.xmpi

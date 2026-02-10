@@ -1,4 +1,4 @@
-\section{Problem Statement and Research Questions}
+\chapter{Problem Statement and Research Questions}
 \label{sec:problem_statement}
 
 Large Language Models (LLMs) are increasingly deployed in systems that can invoke external tools such as databases, file systems, or web APIs. While tool-use enables automation and improved user experience, it also introduces new security risks: user-provided text can manipulate the model into ignoring tool usage constraints or generating malicious tool arguments. This class of attacks is commonly referred to as \emph{prompt injection}. In practice, prompt injection attempts can lead to unauthorized data access, unintended tool execution, or leakage of internal system instructions.
@@ -8,7 +8,7 @@ This thesis addresses the problem of detecting prompt injection attempts in tool
 \paragraph{Definition (Prompt Injection).}
 In the context of this thesis, \emph{prompt injection} refers to a malicious user input that attempts to override the intended instruction hierarchy of a tool-using LLM system. Concretely, the attacker aims to cause the model to disregard system or tool constraints (e.g., role instructions or tool schemas) and instead follow adversarial directives embedded in the user prompt. This includes attempts to induce malicious or unauthorized tool invocations by manipulating the generated tool arguments.
 
-\subsection{Research Questions}
+\section{Research Questions}
 \label{subsec:research_questions}
 
 This thesis is structured around the following research questions:
@@ -19,7 +19,7 @@ This thesis is structured around the following research questions:
     \item \textbf{RQ3:} How does truncation strategy under long tool schemas influence the performance of context-augmented transformer detectors?
 \end{itemize}
 
-\subsection{Hypotheses}
+\section{Hypotheses}
 \label{subsec:hypotheses}
 
 The experimental evaluation is guided by two hypotheses:

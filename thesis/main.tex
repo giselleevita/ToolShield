@@ -1,66 +1,103 @@
-\documentclass[12pt,a4paper]{article}
+%% ToolShield Bachelor Thesis — TU Darmstadt Corporate Design
+%% Based on DEMO-TUDaThesis.tex (tuda-ci v4.x)
+
+\documentclass[
+  english,
+  accentcolor=9c,
+  ruledheaders=section,
+  class=report,
+  thesis={type=bachelor},
+  fontsize=11pt,
+  parskip=half-,
+  custommargins=true,
+  marginpar=false,
+  accept-missing-logos=true,
+]{tudapub}
 
 % ── Packages ─────────────────────────────────────────────────────────────────
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
 \usepackage[english]{babel}
-\usepackage{geometry}
-\geometry{margin=2.5cm}
+\usepackage{microtype}
+\usepackage[autostyle]{csquotes}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \graphicspath{{figures/}}
-\usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{verbatim}
-\usepackage{microtype}
-\usepackage[numbers]{natbib}
 
-% ── Metadata ─────────────────────────────────────────────────────────────────
-\title{ToolShield: Prompt Injection Detection\\for Tool-Using LLM Agents}
-\author{Giselle Evita\\[0.5em]
-\small Bachelor Thesis\\[0.3em]
-\small Department of Computer Science\\
-\small Technische Universit\"at Darmstadt\\[1em]
-\small Supervisor: [Name TBD]}
-\date{February 2026}
+% ── Bibliography (biblatex, as required by TUDa-CI) ─────────────────────────
+\usepackage{biblatex}
+\addbibresource{references.bib}
+
+% ── Thesis metadata ──────────────────────────────────────────────────────────
+\title{ToolShield: Prompt Injection Detection for Tool-Using LLM Agents}
+\author{Giselle Evita}
+\reviewer{[Supervisor Name TBD] \and [Second Reviewer TBD]}
+\department{inf}
+\institute{Department of Computer Science}
+%\group{[Research Group TBD]}  % only used for doctoral theses
+\submissiondate{\today}
+\examdate{\today}
 
 % ── Document ─────────────────────────────────────────────────────────────────
 \begin{document}
 
 \maketitle
+
+% ── Declaration (Eigenständigkeitserklärung) ─────────────────────────────────
+% According to TU Darmstadt APB §22(7), a signed declaration must be included.
+% The affidavit was deactivated by default in tuda-ci v4. The official legally
+% binding text should be downloaded from:
+%   https://www.tu-darmstadt.de/studieren/studierende_tu/studienorganisation_und_tucan/hilfe_und_faq/artikel_details_de_en_37824.de.jsp
+% Print the .docx, sign it, scan it, and include the signed PDF page here:
+%
+% \usepackage{pdfpages}
+% \includepdf[pages=-]{signed_declaration.pdf}
+%
+% For now, a placeholder declaration is included:
 \newpage
+\thispagestyle{empty}
+\vspace*{3cm}
+\begin{center}
+\textbf{\Large Erklärung zur Abschlussarbeit\\gemäß §22 Abs.\ 7 APB der TU Darmstadt}
+\end{center}
+\vspace{1.5cm}
+\noindent
+Hiermit versichere ich, Giselle Evita, die vorliegende Bachelor-Thesis ohne Hilfe Dritter und nur mit den angegebenen Quellen und Hilfsmitteln angefertigt zu haben. Alle Stellen, die Quellen entnommen wurden, sind als solche kenntlich gemacht worden. Diese Arbeit hat in gleicher oder ähnlicher Form noch keiner Prüfungsbehörde vorgelegen.
+
+\noindent
+Mir ist bekannt, dass im Fall eines Plagiats (§38 Abs.\ 2 APB) ein Täuschungsversuch vorliegt, der dazu führen kann, dass die Prüfung als ablegt und nicht bestanden betrachtet und die Vergabe des Hochschulgrades entzogen wird.
+
+\vspace{2cm}
+\noindent
+Darmstadt, \today \hfill \makebox[6cm]{\dotfill}\\
+\mbox{} \hfill {\small Giselle Evita}
+
+% ── Abstract ─────────────────────────────────────────────────────────────────
+\newpage
+\begin{abstract}
+This thesis addresses the problem of detecting prompt injection attacks in tool-using LLM systems, where user-provided prompts are combined with privileged tool context and forwarded to a language model for tool invocation. A prompt injection detection pipeline called ToolShield is presented, evaluating multiple baseline models (heuristics, TF-IDF, transformer classifiers) and context-augmented transformer detectors across controlled split protocols. The central finding is that naive right-truncation of context-augmented inputs can silently remove the user prompt under enterprise-length tool schemas, causing detection performance to collapse to near-random levels. A prompt-preserving truncation strategy is proposed that reserves a minimum token budget for the user prompt, maintaining robust detection even when tool schemas exceed the model's context window. All experiments are reproducible via deterministic seeds, automated verification scripts, and a public artifact bundle.
+\end{abstract}
+
 \tableofcontents
-\newpage
 
 % ── Chapters ─────────────────────────────────────────────────────────────────
 \input{chapters/introduction}
-\newpage
 \input{chapters/related_work}
-\newpage
 \input{chapters/methodology}
-\newpage
 \input{chapters/implementation}
-\newpage
 \input{chapters/results}
-\newpage
 \input{chapters/discussion}
-\newpage
 \input{chapters/threats_to_validity}
-\newpage
 \input{chapters/conclusion}
 
-% ── Tables and Figures (from experiment artifacts) ───────────────────────────
-\newpage
+% ── Appendix ─────────────────────────────────────────────────────────────────
 \appendix
-\section{Experimental Tables and Figures}
-\label{sec:tables_and_figures}
 
+\chapter{Experimental Tables and Figures}
+\label{sec:tables_and_figures}
 \input{chapters/tables}
 
-% ── Reproducibility Notes ────────────────────────────────────────────────────
-\newpage
-\section{Reproducibility Notes}
+\chapter{Reproducibility Notes}
 \label{sec:reproducibility_notes}
 
 All experimental results reported in this thesis can be reproduced from the
@@ -101,8 +138,6 @@ artifacts ensure that reported results are traceable to a specific repository
 state and reproducible under equivalent conditions.
 
 % ── Bibliography ─────────────────────────────────────────────────────────────
-\newpage
-\bibliographystyle{plainnat}
-\bibliography{references}
+\printbibliography
 
 \end{document}

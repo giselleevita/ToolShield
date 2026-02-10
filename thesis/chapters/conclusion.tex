@@ -1,11 +1,11 @@
-\section{Conclusion}
+\chapter{Conclusion}
 \label{sec:conclusion}
 
 This thesis addressed the problem of detecting prompt injection attacks in tool-using LLM systems. In such systems, user-provided prompts are combined with privileged tool context (e.g., tool schemas and descriptions) and forwarded to an LLM that decides whether and how to invoke external tools. This creates a security risk: attackers may attempt to override system constraints or manipulate tool calls through prompt injection, potentially leading to unauthorized actions or data leakage.
 
 The primary research goal of this thesis was to evaluate whether prompt injection detection can be implemented as a practical, reproducible classification pipeline, and whether context-augmented detection remains robust under realistic tool schema conditions. In particular, the work investigated how truncation behavior in context-augmented transformer models affects security performance.
 
-\subsection{Summary of Findings}
+\section{Summary of Findings}
 \label{subsec:conclusion_summary}
 
 The findings are organized according to the research questions and hypotheses stated in Section~\ref{subsec:research_questions}.
@@ -18,21 +18,21 @@ A key result of this thesis is that truncation strategy becomes a critical desig
 
 However, the enterprise long-schema stress test demonstrated a qualitative failure mode. When tool schemas were inflated to approximately 4\,000 characters (approximately 840 schema tokens), naive right-truncation removed the prompt content entirely in all evaluated samples. Under this condition, the classifier's performance collapsed to near-random discrimination, while the prompt-preserving truncation strategy remained stable and retained strong detection performance. This result shows that context-augmented prompt injection detection is not only a modeling problem but also a systems-level input construction problem: if the prompt is truncated away, even strong architectures cannot recover (\textbf{RQ3}). These findings confirm both \textbf{H1} (naive truncation causes catastrophic degradation under long schemas) and \textbf{H2} (prompt-preserving truncation mitigates the failure).
 
-\subsection{Main Contribution}
+\section{Main Contribution}
 \label{subsec:main_contribution}
 
 The main technical contribution of this thesis is a prompt-preserving truncation strategy for context-augmented transformer-based prompt injection detection. Instead of relying on standard right-truncation after concatenating tool context and user prompt, the proposed method enforces a minimum prompt token budget and allocates remaining tokens to tool context. This ensures that the primary attack surface---the user-controlled prompt---remains visible to the classifier even when enterprise tool schemas exceed the available context window.
 
 In addition, this thesis provides an end-to-end reproducible evaluation pipeline, including dataset generation, split protocols, baseline implementations, evaluation scripts, and verification artifacts that document split integrity and experiment consistency.
 
-\subsection{Practical Recommendation}
+\section{Practical Recommendation}
 \label{subsec:practical_recommendation}
 
 Based on the findings, a clear recommendation for real-world LLM tool-use systems is that prompt injection detection mechanisms should explicitly control token budget allocation between tool context and user prompt. Systems that rely on naive concatenation and default truncation risk silently discarding the most security-relevant input under long schemas, leading to catastrophic degradation.
 
 Therefore, any deployment of context-aware safety classifiers should implement prompt-preserving input construction, and latency overhead should be treated as a measurable engineering tradeoff rather than ignored. Furthermore, evaluation should include stress testing with long tool schemas and distribution shift protocols, as standard random splits may not reveal truncation-related failure modes.
 
-\subsection{Future Work}
+\section{Future Work}
 \label{subsec:future_work}
 
 Several directions remain open for future work.
