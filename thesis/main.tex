@@ -1,5 +1,12 @@
 %% ToolShield Bachelor Thesis — TU Darmstadt Corporate Design
-%% Based on DEMO-TUDaThesis.tex (tuda-ci v4.x)
+%% Based on DEMO-TUDaThesis.tex (tuda-ci v4.05, 2025-11-13)
+
+% ── PDF/A-2b compliance (must precede \documentclass) ────────────────────────
+\DocumentMetadata{
+  pdfstandard=a-2b,
+  pdfversion=1.7,
+  lang=en,
+}
 
 \documentclass[
   english,
@@ -27,6 +34,12 @@
 % ── Bibliography (biblatex, as required by TUDa-CI) ─────────────────────────
 \usepackage{biblatex}
 \addbibresource{references.bib}
+
+% ── PDF metadata ─────────────────────────────────────────────────────────────
+\hypersetup{
+  pdfauthor={Giselle Evita},
+  pdfkeywords={prompt injection, LLM, tool-use, truncation, security, TU Darmstadt},
+}
 
 % ── Thesis metadata ──────────────────────────────────────────────────────────
 \title{ToolShield: Prompt Injection Detection for Tool-Using LLM Agents}
