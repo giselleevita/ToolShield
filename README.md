@@ -37,7 +37,7 @@ make pipeline
 ## Project Structure
 
 ```
-toolShield/
+ToolShield/
 ├── configs/               # Configuration files
 │   ├── dataset.yaml      # Dataset generation config
 │   ├── splits.yaml       # Split generation config
