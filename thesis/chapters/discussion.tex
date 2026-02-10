@@ -1,0 +1,176 @@
+\section{Discussion}
+\label{sec:discussion}
+
+This chapter discusses the empirical findings of ToolShield and interprets them in the context of prompt injection detection for LLM tool-use. Beyond reporting predictive performance, the goal is to identify which design decisions materially affect robustness, where the proposed approach generalizes, and what limitations remain for real-world deployment.
+
+\subsection{Interpretation of Baseline Model Performance}
+\label{subsec:discussion_baselines}
+
+The baseline evaluation (Table~\ref{tab:main-results}) shows that even relatively simple machine learning models can achieve strong performance on the synthetic ToolShield dataset, while purely rule-based approaches remain substantially weaker.
+
+\subsubsection{Why TF-IDF + Logistic Regression performs strongly}
+
+The \texttt{tfidf\_lr} model achieves near-ceiling ROC-AUC and PR-AUC on \texttt{S\_random} (Table~\ref{tab:main-results}). This outcome is plausible because many prompt injection attacks contain lexical markers such as explicit override commands (e.g., ``ignore previous instructions''), policy evasion language, or imperative phrases related to tool misuse. TF-IDF features are well-suited to capture such token-level signals, and logistic regression can assign high weight to discriminative n-grams without requiring complex contextual reasoning.
+
+This suggests that, in the current dataset distribution, the problem has a strong surface-level lexical component. In other words, the classifier does not necessarily need semantic understanding of the tool schema to separate benign and malicious samples.
+
+\subsubsection{Why heuristic approaches are weaker}
+
+Both \texttt{heuristic} and \texttt{heuristic\_score} show substantially lower ROC-AUC compared to learned baselines (Table~\ref{tab:main-results}). This is expected for several reasons. First, heuristics tend to rely on a limited set of keyword triggers, making them brittle against paraphrasing or attacks that avoid explicit phrases. Second, heuristics generally cannot provide calibrated ranking across diverse prompt types; they behave more like hard rules than probabilistic detectors.
+
+The results indicate that handcrafted rules may block a subset of obvious attacks but do not provide consistent discrimination across the full dataset distribution. This supports the design choice of including learned models as the primary detection mechanism.
+
+\subsubsection{Transformer-based models and the role of context}
+
+The transformer baselines and context-aware transformers achieve near-perfect ranking performance on \texttt{S\_random} and \texttt{S\_attack\_holdout} in the standard dataset configuration (Table~\ref{tab:main-results}). This suggests that the dataset contains sufficient separability for a pretrained language model to learn robust indicators of malicious intent.
+
+However, the strong performance of \texttt{tfidf\_lr} also implies that this success is not necessarily due to deep reasoning about tool semantics, but may instead be explained by distributional regularities in the attack prompt phrasing.
+
+\subsection{Generalization Under Distribution Shift (\texttt{S\_attack\_holdout})}
+\label{subsec:discussion_generalization}
+
+The \texttt{S\_attack\_holdout} protocol is designed to evaluate generalization beyond memorized attack templates by holding out an entire attack family (AF4) from training. Under this setting, both context transformer variants remain near-perfect in the standard dataset configuration (Table~\ref{tab:main-results}), with ROC-AUC values close to 1.0.
+
+This outcome suggests that the learned models do not rely exclusively on memorizing the surface form of AF4, but can generalize from other attack families. One plausible interpretation is that the dataset contains common structural properties across attack families, such as:
+\begin{itemize}
+    \item attempts to override role or system-level instructions,
+    \item explicit instructions to misuse tools,
+    \item phrasing patterns that resemble jailbreak or prompt override prompts.
+\end{itemize}
+
+At the same time, near-ceiling generalization results should be interpreted cautiously. Since the dataset is synthetically generated, the held-out family may still share underlying phrasing patterns with other families, which can artificially simplify the generalization task. This motivates the need for further evaluation on human-written and real-world tool misuse prompts (see Section~\ref{subsec:discussion_validity}).
+
+\paragraph{Note on \texttt{S\_tool\_holdout}.}
+The \texttt{S\_tool\_holdout} protocol can produce single-class training splits depending on the tool--label distribution. In such cases, supervised training is not meaningful and affected model--protocol combinations must be skipped. This is an important practical constraint for synthetic dataset design: tool-level holdout protocols require careful balancing to avoid degenerate training distributions.
+
+\subsection{Truncation Bias as a Catastrophic Failure Mode}
+\label{subsec:discussion_truncation_bias}
+
+The most significant result of this thesis is that truncation strategy can dominate model performance when tool schemas become large. The long-schema stress test provides evidence that naive truncation is not merely a minor preprocessing detail, but a critical robustness factor.
+
+\subsubsection{Why truncation occurs in context-augmented tool-use inputs}
+
+In ToolShield, the context transformer concatenates multiple fields into a single input sequence, including role framing, tool metadata, schema, tool description, and the user prompt. With a fixed maximum sequence length (256 tokens), the tokenizer must truncate some part of the input.
+
+Naive truncation follows the standard HuggingFace right-truncation behavior: once the maximum token budget is exceeded, tokens at the end of the concatenated sequence are removed. Since the prompt is appended last, this approach implicitly prioritizes the schema and context fields over the prompt.
+
+This ordering is undesirable for injection detection, because the user prompt is the primary source of malicious instructions. The schema and tool metadata provide context, but are not themselves indicative of whether the user prompt is malicious.
+
+\subsubsection{Empirical evidence of prompt removal}
+
+The truncation statistics in the enterprise long-schema setting (Table~\ref{tab:longschema-stress}) show maximal separation between strategies. Naive truncation results in $100\%$ prompt truncation and a mean prompt retention ratio of 0.0. In contrast, the \texttt{keep\_prompt} strategy yields $0\%$ prompt truncation and a retention ratio of 1.0.
+
+The prompt retention collapse is further visualized in Figure~\ref{fig:prompt-retention-quartiles} and Figure~\ref{fig:prompt-retention-deciles}, which show that naive truncation consistently eliminates prompt tokens across schema length bins.
+
+\subsubsection{Why the failure is catastrophic}
+
+The classification performance under enterprise-length schemas collapses under naive truncation (Table~\ref{tab:longschema-stress}). ROC-AUC drops to approximately 0.455--0.479, which is close to random guessing. Operating-point metrics similarly become unusable, with FPR@TPR90 and FPR@TPR95 approaching values near 1.0.
+
+This indicates that the classifier is effectively operating without access to the user prompt. In this situation, the model must infer maliciousness solely from tool metadata and schema content, which is insufficient because these fields are largely identical across benign and malicious samples. The model is therefore deprived of the key signal necessary for injection detection.
+
+In practical terms, this failure mode would cause a deployed guard system to behave unpredictably under realistic tool schemas, potentially allowing prompt injection attacks to pass undetected while also generating excessive false positives.
+
+\subsubsection{Why truncation bias is not visible in the standard dataset}
+
+In the standard dataset configuration, the schema length is constrained by \texttt{max\_schema\_length=200} characters. Under this setting, schemas remain short enough that the total sequence typically fits within the 256-token budget. As a result, both truncation strategies achieve similar performance (Table~\ref{tab:truncation-ablation}).
+
+This highlights a key methodological point: evaluation under artificially short schemas can hide truncation failure modes that would emerge in realistic enterprise settings. The long-schema stress test therefore provides a necessary complement to the standard evaluation.
+
+\subsection{Robustness vs.\ Latency Tradeoff}
+\label{subsec:discussion_tradeoffs}
+
+The \texttt{keep\_prompt} strategy introduces a measurable inference latency overhead (Table~\ref{tab:latency-results}). This is expected, as the prompt-preserving method performs separate tokenization passes for context and prompt and enforces explicit budget allocation.
+
+From a deployment perspective, this introduces a tradeoff:
+\begin{itemize}
+    \item \textbf{Naive truncation:} lower latency, but fails catastrophically when schemas exceed the token budget.
+    \item \textbf{Prompt-preserving truncation:} higher latency, but stable performance under realistic schema sizes.
+\end{itemize}
+
+The results suggest that prompt preservation should be treated as a correctness requirement rather than an optional improvement. In other words, a faster model is not useful if it systematically discards the information needed to detect attacks.
+
+However, the observed overhead also motivates future work on efficiency improvements. Possible directions include caching tokenized schema context, using smaller transformer backbones, or applying hierarchical encoding strategies that avoid repeated tokenization.
+
+\subsection{Implications for Real-World LLM Tool-Use Systems}
+\label{subsec:discussion_practical}
+
+The results of ToolShield have direct implications for LLM tool-use architectures that rely on structured tool schemas, JSON specifications, or API documentation.
+
+\subsubsection{Schema length as a deployment reality}
+
+Real enterprise tool schemas are often substantially longer than the short schemas used in many academic benchmarks. They may include nested objects, long parameter descriptions, multiple endpoints, and detailed constraints. The long-schema stress test approximates this condition and demonstrates that input preprocessing decisions can break detection performance entirely.
+
+This implies that prompt injection defenses evaluated only on short schemas may provide a misleading sense of security.
+
+\subsubsection{Guard models must prioritize the user prompt}
+
+The results support the design principle that prompt injection detection must preserve the user prompt at all costs. Tool context is relevant for interpreting the prompt, but it is not the primary discriminative signal.
+
+A guard system that truncates the prompt risks silently degrading into a schema-only classifier. Such a model would be incapable of detecting prompt-based attacks, even if its architecture appears sophisticated.
+
+\subsubsection{Operating-point evaluation matters}
+
+The budget-based evaluation metrics (Table~\ref{tab:budget-results}) and ASR reduction metrics (Table~\ref{tab:asr-results}) emphasize that threshold selection matters in deployment. A model with strong ROC-AUC may still be unusable if it cannot achieve a low false positive rate at high recall.
+
+In the long-schema setting, the naive truncation strategy fails precisely in this sense: even if the model produces scores, it cannot achieve a threshold that satisfies reasonable false positive budgets.
+
+\subsection{Threats to Validity}
+\label{subsec:discussion_validity}
+
+Several limitations affect the interpretation of the results.
+
+\subsubsection{Synthetic dataset generation}
+
+The dataset is synthetically generated, which may introduce artifacts that simplify classification. In particular, malicious prompts may contain stylistic patterns that are easier to detect than in real adversarial prompts written by humans. Similarly, benign prompts may be less diverse than real-world tool-use queries.
+
+This limits the external validity of absolute performance values, particularly near-ceiling ROC-AUC results.
+
+\subsubsection{Schema inflation method}
+
+The long-schema stress test inflates schemas to approximately 4\,000 characters. While this produces realistic schema lengths, it is still a controlled transformation of synthetic schemas. Real enterprise schemas may differ not only in length but also in structural complexity and descriptive language. Therefore, while the truncation failure mode is demonstrated clearly, the precise quantitative effects may vary under real schemas.
+
+\subsubsection{Limited model diversity}
+
+Only a small set of model families was evaluated: heuristics, TF-IDF + logistic regression, and transformer-based classifiers. Larger-scale architectures, instruction-tuned models, or specialized retrieval-based defenses were not explored. Additionally, only one base transformer family was used, limiting conclusions about generality across architectures.
+
+\subsubsection{Evaluation scope}
+
+The evaluation focuses on binary classification of malicious vs.\ benign prompts. Real-world prompt injection defense often requires finer-grained distinctions, such as:
+\begin{itemize}
+    \item separating benign but unusual prompts from malicious prompts,
+    \item identifying which tool calls are unsafe,
+    \item reasoning about multi-turn conversations and tool outputs.
+\end{itemize}
+
+The current evaluation does not cover multi-turn tool-use traces or attacks that exploit tool output channels, which are relevant in practical deployments.
+
+\subsection{Reproducibility and Credibility of Experimental Evidence}
+\label{subsec:discussion_reproducibility}
+
+A strength of ToolShield is the emphasis on determinism and verification. Experimental results are aggregated over controlled seeds, and the artifact bundle includes environment snapshots, run manifests, and automated verification scripts.
+
+The files \texttt{split\_hygiene.md} and \texttt{guards.json} provide evidence that split constraints were enforced correctly, including template leakage prevention and AF4 holdout integrity. Additionally, \texttt{verification\_output.txt} documents successful execution of the verification pipeline.
+
+These measures reduce the likelihood that results are artifacts of accidental leakage, incomplete runs, or nondeterministic preprocessing. While reproducibility does not guarantee external validity, it strengthens confidence that the reported comparisons are internally consistent and repeatable.
+
+\subsection{Summary of Contributions and Remaining Open Problems}
+\label{subsec:discussion_contributions}
+
+ToolShield contributes a controlled experimental framework for prompt injection detection in tool-use settings, including multiple baseline models and split protocols. The primary technical contribution is the identification and empirical demonstration of truncation bias as a catastrophic failure mode under realistic schema lengths, together with a prompt-preserving truncation strategy that eliminates this failure.
+
+At the same time, several open problems remain unresolved. The evaluation is performed on synthetic data and does not establish robustness against adaptive human adversaries. Furthermore, latency overhead and scaling to larger tools and multi-step tool-use workflows remain challenges.
+
+Overall, the thesis demonstrates that correct input construction is a prerequisite for reliable prompt injection detection and that guard systems must explicitly preserve the prompt signal to remain functional under enterprise tool schemas.
+
+\subsection{Discussion Conclusions}
+\label{subsec:discussion_conclusions}
+
+\begin{itemize}
+    \item Strong baseline performance of \texttt{tfidf\_lr} indicates that lexical signals play a major role in the synthetic dataset distribution (Table~\ref{tab:main-results}).
+    \item Heuristic detectors provide limited ranking performance and are insufficient as standalone defenses.
+    \item Under \texttt{S\_attack\_holdout}, transformer-based models generalize well in the standard schema setting, but this generalization may partially reflect synthetic distribution overlap.
+    \item Naive truncation is a catastrophic failure mode under enterprise-length schemas: it removes the user prompt entirely and collapses detection performance to near-random (Table~\ref{tab:longschema-stress}, Figure~\ref{fig:prompt-retention-quartiles}).
+    \item Prompt-preserving truncation restores robustness but introduces measurable latency overhead (Table~\ref{tab:latency-results}).
+    \item The results highlight that preprocessing and token budget allocation are security-critical design decisions in real-world LLM tool-use systems.
+    \item Verification scripts and artifact-based reporting strengthen credibility by reducing the likelihood of split leakage or incomplete experimental runs.
+\end{itemize}

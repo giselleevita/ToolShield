@@ -1,0 +1,64 @@
+\documentclass[12pt,a4paper]{article}
+
+% ── Packages ─────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{verbatim}
+\usepackage{microtype}
+\usepackage[numbers]{natbib}
+
+% ── Metadata ─────────────────────────────────────────────────────────────────
+\title{ToolShield: Prompt Injection Detection\\for Tool-Using LLM Agents}
+\author{Giselle Evita\\[0.5em]
+\small TU Darmstadt, Department of Computer Science\\
+\small Bachelor Thesis}
+\date{2026}
+
+% ── Document ─────────────────────────────────────────────────────────────────
+\begin{document}
+
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+
+% ── Chapters ─────────────────────────────────────────────────────────────────
+\input{chapters/introduction}
+\newpage
+\input{chapters/related_work}
+\newpage
+\input{chapters/methodology}
+\newpage
+\input{chapters/implementation}
+\newpage
+\input{chapters/results}
+\newpage
+\input{chapters/discussion}
+\newpage
+\input{chapters/threats_to_validity}
+\newpage
+\input{chapters/conclusion}
+
+% ── Tables and Figures (from experiment artifacts) ───────────────────────────
+\newpage
+\appendix
+\section{Experimental Tables and Figures}
+\label{sec:tables_and_figures}
+
+\input{chapters/tables}
+
+% ── Bibliography ─────────────────────────────────────────────────────────────
+\newpage
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

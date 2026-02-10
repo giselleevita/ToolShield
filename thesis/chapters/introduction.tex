@@ -1,0 +1,30 @@
+\section{Problem Statement and Research Questions}
+\label{sec:problem_statement}
+
+Large Language Models (LLMs) are increasingly deployed in systems that can invoke external tools such as databases, file systems, or web APIs. While tool-use enables automation and improved user experience, it also introduces new security risks: user-provided text can manipulate the model into ignoring tool usage constraints or generating malicious tool arguments. This class of attacks is commonly referred to as \emph{prompt injection}. In practice, prompt injection attempts can lead to unauthorized data access, unintended tool execution, or leakage of internal system instructions.
+
+This thesis addresses the problem of detecting prompt injection attempts in tool-using LLM systems. The goal is to develop a detection mechanism that can be deployed as a gating layer before tool execution, classifying tool-use prompts as benign or malicious. In addition to baseline approaches (heuristics, TF-IDF, and transformer classifiers), this thesis investigates a critical implementation issue for context-aware detection models: how token budget allocation and truncation can systematically remove the user prompt under long tool schemas.
+
+\paragraph{Definition (Prompt Injection).}
+In the context of this thesis, \emph{prompt injection} refers to a malicious user input that attempts to override the intended instruction hierarchy of a tool-using LLM system. Concretely, the attacker aims to cause the model to disregard system or tool constraints (e.g., role instructions or tool schemas) and instead follow adversarial directives embedded in the user prompt.
+
+\subsection{Research Questions}
+\label{subsec:research_questions}
+
+This thesis is structured around the following research questions:
+
+\begin{itemize}
+    \item \textbf{RQ1:} How accurately can prompt injection attempts be detected in single-turn tool-use prompts using lightweight baselines (heuristics and TF-IDF) compared to transformer-based classifiers?
+    \item \textbf{RQ2:} To what extent do context-aware models generalize to unseen attack families when evaluated under distribution shift (attack-holdout protocol)?
+    \item \textbf{RQ3:} How does truncation strategy under long tool schemas influence the performance of context-augmented transformer detectors?
+\end{itemize}
+
+\subsection{Hypotheses}
+\label{subsec:hypotheses}
+
+The experimental evaluation is guided by two hypotheses:
+
+\begin{itemize}
+    \item \textbf{H1 (Truncation bias under long schemas):} Under enterprise-length tool schemas, naive right-truncation removes the user prompt from the model input, causing a significant degradation in prompt injection detection performance.
+    \item \textbf{H2 (Prompt-preserving truncation mitigates bias):} A prompt-preserving truncation strategy that reserves a minimum token budget for the user prompt prevents prompt loss and maintains high detection performance under long schemas.
+\end{itemize}

@@ -1,0 +1,96 @@
+\section{Threats to Validity}
+\label{sec:threats_to_validity}
+
+This chapter discusses limitations and potential threats to the validity of the experimental results presented in this thesis. Since ToolShield is evaluated under a controlled benchmark setting with synthetic data generation, careful consideration is required when interpreting the results and extrapolating them to real-world tool-using LLM systems. The threats are structured according to common validity categories in empirical computer science research.
+
+\subsection{Internal Validity}
+\label{subsec:internal_validity}
+
+Internal validity concerns whether the reported results are caused by the intended experimental factors rather than uncontrolled confounders.
+
+\subsubsection{Synthetic dataset generation bias}
+The dataset used in this thesis is synthetically generated. While this enables systematic control over prompt injection families and tool schemas, it introduces the risk that generated benign and malicious prompts contain artifacts that are specific to the generator logic. If such artifacts correlate with the label distribution, classifiers may learn shortcuts rather than robust prompt injection features. This may inflate performance metrics, particularly under the \texttt{S\_random} protocol where the training and test distribution are closely aligned.
+
+Additionally, synthetic attacks may not fully reflect the diversity and creativity of real adversarial prompts. Prompt injection attempts in practice may contain indirect manipulation strategies, novel formatting, or subtle semantic coercion that is not represented in the synthetic benchmark.
+
+\subsubsection{Controlled experimental setting}
+The evaluation is conducted under a controlled offline classification setting. The detector is evaluated as a binary classifier predicting whether a single tool-use prompt is malicious. In real systems, tool execution decisions are often influenced by additional system state such as dialogue history, user identity, rate limits, and application-specific security policies. The absence of these factors in the benchmark may limit how well the results represent deployment scenarios.
+
+Furthermore, the evaluation assumes that the tool schema and tool description are always available as structured context, which is typical for function calling but may not hold for all LLM integration patterns.
+
+\subsubsection{Template artifacts and distribution simplifications}
+Although split hygiene checks were implemented, there remains a risk that synthetic template structure itself creates distinguishable patterns. For example, benign prompts might systematically differ in tone, length, or formatting compared to attack prompts. Even if template leakage is prevented, models could exploit distributional cues that would not exist in a more heterogeneous dataset.
+
+The benchmark also models prompt injection as a binary classification task with a limited set of attack families (AF1--AF4). While these families cover representative strategies, they do not capture the full complexity of real prompt injection where adversaries may combine multiple techniques or dynamically adapt based on the system response.
+
+\subsubsection{Risk of overfitting to synthetic prompt style}
+The strong performance of certain models (e.g., TF-IDF + Logistic Regression) suggests that lexical patterns may be sufficient for classification within the benchmark distribution. This raises the possibility that the models overfit to synthetic writing style, rather than learning more generalizable features. Such overfitting would reduce the detector's effectiveness against adversarial prompts that intentionally avoid the learned lexical indicators.
+
+The \texttt{S\_attack\_holdout} protocol partially addresses this concern by evaluating on a held-out attack family. However, it remains possible that shared generator artifacts persist across families, enabling generalization that may not translate to real-world attacks.
+
+\subsection{External Validity}
+\label{subsec:external_validity}
+
+External validity concerns the extent to which results generalize to real-world environments.
+
+\subsubsection{Tool schema realism and application diversity}
+The benchmark models tool schemas and tool descriptions in a simplified and controlled form. Real enterprise tool schemas may contain nested JSON structures, long enumerations, multiple parameter groups, and extensive documentation text. Additionally, the semantic meaning of schemas varies across domains (finance, healthcare, internal IT systems), which may influence how prompt injection manifests.
+
+The long-schema stress test approximates enterprise-scale schemas by inflating schema length, but the inflation procedure may not capture the semantic structure of real schemas. Therefore, the observed truncation bias results demonstrate a valid failure mode, but the exact threshold where truncation becomes harmful may differ in real systems depending on schema formatting and tokenization characteristics.
+
+\subsubsection{Attacker creativity and adaptive strategies}
+Real attackers can adapt strategies based on model behavior, system prompts, and tool execution feedback. In contrast, the benchmark attacks are static samples. Adaptive adversaries may use obfuscation, multi-step reasoning, or instruction camouflage, potentially reducing the effectiveness of static classifiers.
+
+In addition, adversaries may target vulnerabilities beyond prompt injection detection, such as manipulating the tool outputs, exploiting weak downstream validation, or inducing denial-of-service behavior. These aspects are not modeled in the current evaluation.
+
+\subsubsection{Multilingual and cross-cultural prompt injection}
+The dataset is primarily English-based. In practical deployments, tool-use systems may receive multilingual user input. Prompt injection attempts may include code-switching, non-Latin scripts, or language-specific coercion patterns. Since multilingual attacks were not evaluated, the results should not be assumed to generalize beyond the language distribution represented in the dataset.
+
+\subsubsection{Multi-turn agents and tool chaining}
+This thesis evaluates single-turn classification of tool prompts. Many real systems operate as multi-turn agents, where prompt injection may occur gradually through context accumulation, indirect user manipulation, or tool output poisoning. Additionally, tool chaining can introduce new attack surfaces, where an attacker exploits the output of one tool to compromise subsequent tool calls.
+
+Since multi-turn and tool-chain scenarios are out of scope, ToolShield's results cannot be directly interpreted as a complete defense for full agentic systems.
+
+\subsection{Construct Validity}
+\label{subsec:construct_validity}
+
+Construct validity concerns whether the chosen metrics and experimental design accurately represent the intended security objective.
+
+\subsubsection{ROC-AUC and PR-AUC versus operational security}
+ROC-AUC and PR-AUC are useful for comparing ranking performance across models, but they do not directly translate to deployment safety. Real-world systems require threshold selection under strict false positive constraints, and the cost of blocking benign prompts may be high. A model with strong ROC-AUC may still be unsuitable if its achievable operating points lead to unacceptable false positives.
+
+Therefore, the inclusion of operating-point metrics such as FPR@TPR90/95 and false-positive budget evaluations improves construct validity. However, these metrics still rely on the dataset's label distribution and may not reflect the class imbalance observed in production environments.
+
+\subsubsection{Limitations of ASR reduction as a security metric}
+ASR reduction measures the fraction of attacks blocked by a detector under a specific operating point. While this is relevant for evaluating gating mechanisms, it assumes that attacks are either fully successful or fully prevented. In practice, prompt injection success may be partial: an attacker may succeed in exfiltrating some data, influencing tool parameters slightly, or causing limited policy violations.
+
+Additionally, ASR reduction is defined relative to the synthetic attack set. If real-world attacks differ substantially, ASR reduction may not accurately represent true security improvement.
+
+\subsubsection{Threshold selection and budget constraints}
+The budget-based evaluation selects thresholds based on validation splits and evaluates them on test data. This assumes that the validation set is representative of deployment conditions. Under distribution shift, the selected threshold may not remain optimal. The \texttt{S\_attack\_holdout} protocol provides one form of shift, but real-world shifts may be more complex, involving unseen tools, unseen user populations, or different prompt formatting conventions.
+
+Moreover, the budget setting assumes a static acceptable false-positive rate (e.g., 1\%, 3\%, 5\%). In practice, acceptable false positives may depend on tool criticality, user trust level, or downstream validation mechanisms.
+
+\subsection{Reproducibility and Reliability Validity}
+\label{subsec:reproducibility_validity}
+
+Reproducibility validity concerns whether results can be reliably reproduced and whether experimental outcomes are stable.
+
+\subsubsection{Deterministic splits and controlled seeds}
+The experiment pipeline uses deterministic dataset generation, split generation, and repeated evaluation across multiple seeds. This improves reliability by reducing sensitivity to random initialization effects and enabling aggregation of results. Deterministic split protocols also reduce the risk of accidental leakage across train/validation/test partitions.
+
+\subsubsection{Environment freeze and experiment manifests}
+The environment is frozen via dependency recording, and run metadata is stored in manifest files. These artifacts reduce ambiguity about package versions and runtime configurations. The presence of a dedicated artifact index (\texttt{THESIS\_ARTIFACTS.md}) strengthens reproducibility by providing a single authoritative reference to the exact files used for thesis tables and figures.
+
+\subsubsection{Verification scripts and split hygiene checks}
+To strengthen experimental credibility, automated verification scripts were added. The files \texttt{split\_hygiene.md} and \texttt{guards.json} document integrity checks ensuring that split protocols satisfy constraints such as attack-family holdout and absence of template leakage. The file \texttt{verification\_output.txt} provides an auditable record that the verification pipeline was executed successfully.
+
+While these checks cannot guarantee that the synthetic benchmark represents real attacks, they reduce the risk of experimental errors such as accidental data leakage or incomplete artifact generation.
+
+\subsubsection{Residual nondeterminism in ML frameworks}
+Despite controlled seeds, some nondeterminism may remain due to deep learning framework behavior, hardware execution differences, or underlying numerical operations. This is particularly relevant for transformer training, where GPU kernels and low-level optimizations may introduce slight variation. Although the reported results appear stable under repeated runs, minor deviations could occur across different machines or software versions.
+
+\subsection{Mitigation Summary}
+\label{subsec:validity_mitigation_summary}
+
+Several measures were taken to reduce the identified threats. Template leakage prevention and split protocol verification reduce internal validity risks. Multiple split protocols, including \texttt{S\_attack\_holdout}, improve confidence in generalization beyond simple memorization. The long-schema stress test provides a controlled demonstration of truncation bias under enterprise-scale schemas. Finally, reproducibility was strengthened through deterministic seeds, frozen environments, manifest generation, and explicit verification artifacts (\texttt{split\_hygiene.md}, \texttt{guards.json}, \texttt{verification\_output.txt}) indexed via \texttt{THESIS\_ARTIFACTS.md}. Despite these mitigations, external validity remains limited by the synthetic nature of the benchmark and the absence of multi-turn agent evaluation, which should be addressed in future work.

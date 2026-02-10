@@ -1,0 +1,189 @@
+\section{Results}
+\label{sec:results}
+
+This chapter presents the empirical evaluation of ToolShield across multiple split protocols and model families. We report performance using ROC-AUC and PR-AUC as threshold-independent metrics, and FPR@TPR90/95 as operating-point metrics relevant for deployment. Additionally, we evaluate the reduction in Attack Success Rate (ASR reduction) under controlled false-positive budgets and analyze inference latency.
+
+\paragraph{Experimental setup recap.}
+Neural model results (context transformer variants) are aggregated over $n{=}3$ independent random seeds (seeds 0, 1, 2) and reported as mean $\pm$ standard deviation. Some baseline rows in Table~\ref{tab:main-results} are reported for a single seed ($n_{\text{seeds}}{=}1$): specifically \texttt{heuristic}, \texttt{heuristic\_score}, \texttt{tfidf\_lr}, and \texttt{transformer}, which were executed once in the standard dataset due to runtime constraints. Models are evaluated on two primary protocols: \texttt{S\_random} (stratified random split with template leakage prevention) and \texttt{S\_attack\_holdout} (AF4 held out from training). The metrics reported are: ROC-AUC, PR-AUC, FPR@TPR90, FPR@TPR95, ASR reduction at both operating points, and warm-start inference latency at P50 and P95 percentiles.
+
+All reported values are taken directly from \texttt{summary.csv} and \texttt{truncation\_stats.csv} in the thesis artifact bundle (Table~\ref{tab:main-results}, Table~\ref{tab:longschema-stress}).
+
+\subsection{Experimental Protocols}
+\label{subsec:protocols}
+
+We evaluate models under the following split protocols:
+
+\begin{itemize}
+    \item \texttt{S\_random}: stratified random split with template leakage prevention.
+    \item \texttt{S\_attack\_holdout}: distribution shift setting where an entire attack family (AF4) is held out from training and appears only in the test set.
+\end{itemize}
+
+The \texttt{S\_attack\_holdout} protocol is intended to measure generalization to unseen prompt injection strategies rather than memorization of attack templates.
+
+\paragraph{Note on \texttt{S\_tool\_holdout}.}
+A third protocol, \texttt{S\_tool\_holdout}, excludes all samples of a specific tool from training. In some configurations, this yields a single-class training split (e.g., only benign samples for that tool), which prevents supervised models from converging meaningfully. Where this occurs, the affected model--protocol combination is omitted from the results rather than reported with degenerate metrics. This limitation is inherent to the synthetic dataset's tool--label distribution and does not affect the \texttt{S\_random} or \texttt{S\_attack\_holdout} evaluations.
+
+\subsection{Baseline Model Performance on the Standard Dataset}
+\label{subsec:baseline_standard}
+
+Table~\ref{tab:main-results} summarizes performance on the standard dataset. Overall, nearly all models achieve strong discrimination, with transformer-based approaches approaching perfect classification.
+
+\subsubsection{\texttt{S\_random} Results}
+
+On \texttt{S\_random}, multiple models achieve near-ceiling performance:
+
+\begin{itemize}
+    \item \texttt{tfidf\_lr} achieves ROC-AUC $=0.9999$ and PR-AUC $=0.9999$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.000$.
+    \item \texttt{transformer} (text-only) achieves ROC-AUC $=0.9877$ and PR-AUC $=0.9911$, but exhibits higher false positive rates at strict operating points (FPR@TPR90 $=0.020$, FPR@TPR95 $=0.200$).
+    \item \texttt{context\_transformer\_keep\_prompt} achieves ROC-AUC $=1.000$ and PR-AUC $=1.000$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.000$.
+\end{itemize}
+
+The context-aware transformer achieves perfect ranking performance on this split. This suggests that, under the synthetic data distribution, context features (tool schema, tool description, and role framing) provide sufficient information to separate benign from malicious prompts.
+
+In contrast, the \texttt{heuristic} baseline performs substantially worse with ROC-AUC $=0.7137$, despite a relatively high PR-AUC $=0.8722$. This indicates that while heuristic rules can capture many attacks, they do not provide reliable ranking across all samples.
+
+\subsubsection{\texttt{S\_attack\_holdout} Results}
+
+Under \texttt{S\_attack\_holdout}, performance remains near-perfect for both context transformer variants:
+
+\begin{itemize}
+    \item \texttt{context\_transformer\_keep\_prompt} achieves ROC-AUC $=0.9987$ and PR-AUC $=0.9990$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$.
+    \item \texttt{context\_transformer\_naive} achieves ROC-AUC $=0.9982$ and PR-AUC $=0.9986$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$.
+\end{itemize}
+
+These results show that, in the standard dataset configuration, both truncation strategies behave similarly. This is explained by the relatively small configured schema length limit (\texttt{max\_schema\_length=200} characters), which prevents the tool schema from occupying most of the token budget.
+
+\subsection{Attack Success Rate (ASR) Reduction}
+\label{subsec:asr_reduction}
+
+We report ASR reduction at two operating points: TPR90 and TPR95 (Table~\ref{tab:asr-results}). ASR reduction measures how effectively the detector blocks malicious prompts when deployed as a binary gate before tool execution. Budget-constrained threshold selection results are presented in Table~\ref{tab:budget-results}.
+
+\subsubsection{\texttt{S\_random}}
+
+On \texttt{S\_random}, the context transformer variants achieve ASR reduction between $92.7\%$ and $94.4\%$:
+
+\begin{itemize}
+    \item \texttt{keep\_prompt}: ASR reduction at TPR90 $=0.9274$, at TPR95 $=1.000$.
+    \item \texttt{naive}: ASR reduction at TPR90 $=0.9435$, at TPR95 $=0.9597$.
+\end{itemize}
+
+This indicates that under the standard schema size setting, both strategies remain highly effective at reducing successful attacks. Differences are small and likely not statistically meaningful at this dataset scale.
+
+\subsubsection{\texttt{S\_attack\_holdout}}
+
+Under distribution shift (\texttt{S\_attack\_holdout}), ASR reduction remains strong:
+
+\begin{itemize}
+    \item \texttt{keep\_prompt}: ASR reduction at TPR90 $=0.9360$, at TPR95 $=0.9760$.
+    \item \texttt{naive}: ASR reduction at TPR90 $=0.9120$, at TPR95 $=0.9760$.
+\end{itemize}
+
+This confirms that ToolShield generalizes well to the held-out AF4 attack family when schemas remain short enough to avoid truncation bias.
+
+\subsection{Latency Measurements}
+\label{subsec:latency}
+
+Inference latency was measured in warm mode. Table~\ref{tab:latency-results} summarizes P50 and P95 latencies.
+
+On the standard dataset, the following latency trends are observed:
+
+\begin{itemize}
+    \item \texttt{tfidf\_lr} is the fastest model with P50 latency $=2.63$\,ms.
+    \item Transformer-based models exhibit the highest latencies: \texttt{transformer} (text-only) has P50 latency $=11614.90$\,ms, and \texttt{context\_transformer\_keep\_prompt} has P50 latency $=4669.87$\,ms.
+    \item \texttt{context\_transformer\_naive} has P50 latency $=2744.15$\,ms, lower than \texttt{keep\_prompt} due to the simpler single-pass tokenization.
+\end{itemize}
+
+Thus, prompt-preserving truncation introduces additional runtime overhead, roughly increasing P50 latency from ${\sim}\,2.7$\,s to ${\sim}\,4.7$\,s in this environment. This is expected, since the \texttt{keep\_prompt} strategy performs two-pass tokenization and explicit budget allocation.
+
+\subsection{Truncation Ablation on the Standard Dataset}
+\label{subsec:truncation_ablation_standard}
+
+To evaluate whether truncation strategy affects detection performance, we compare two configurations:
+
+\begin{itemize}
+    \item \texttt{naive}: standard HuggingFace right-truncation after concatenation.
+    \item \texttt{keep\_prompt}: explicit prompt-preserving truncation where a minimum prompt token budget is reserved.
+\end{itemize}
+
+On the standard dataset, both strategies yield nearly identical predictive performance (Table~\ref{tab:truncation-ablation}). For example, under \texttt{S\_attack\_holdout}, ROC-AUC is $0.9987$ for \texttt{keep\_prompt} and $0.9982$ for \texttt{naive}.
+
+This suggests that truncation bias is not visible in this dataset configuration due to the hard schema length constraint (\texttt{max\_schema\_length=200}), which prevents context fields from dominating the model input.
+
+\subsubsection{Enterprise long-schema stress test}
+\label{subsec:longschema_stress_test}
+
+To evaluate truncation behaviour under more realistic enterprise tool schemas, we constructed a long-schema dataset variant where tool schemas were inflated to approximately 4\,000 characters, corresponding to approximately 840 schema tokens on average (Table~\ref{tab:longschema-stress}).
+
+This experiment directly tests the hypothesis that naive truncation can remove the prompt entirely when tool context fields are large. The primary quantitative evidence is recorded in \texttt{truncation\_stats.csv}; a concrete record-level walkthrough showing token allocation under both strategies is provided in \texttt{appendix\_truncation\_example.md}.
+
+\paragraph{Prompt retention statistics.}
+The truncation statistics are recorded in \texttt{truncation\_stats.csv} and summarized in Table~\ref{tab:longschema-stress}. Results show maximal separation between strategies:
+
+\begin{itemize}
+    \item \texttt{naive} truncation: $100\%$ of samples experienced prompt truncation in both protocols.
+    \item \texttt{keep\_prompt} truncation: $0\%$ of samples experienced prompt truncation.
+\end{itemize}
+
+Quantitatively, mean prompt retention ratio is:
+
+\begin{itemize}
+    \item \texttt{naive}: $0.000$ (mean prompt tokens retained $= 0.0$).
+    \item \texttt{keep\_prompt}: $1.000$ (mean prompt tokens retained $\approx 19$).
+\end{itemize}
+
+This confirms that, under a 256-token budget, naive truncation results in complete removal of the prompt when schemas approach ${\sim}\,840$ tokens. In contrast, \texttt{keep\_prompt} consistently preserves all prompt tokens.
+
+The schema inflation achieved the intended stress condition: schema token length ranged from 795 to 889 tokens (\texttt{S\_random}) and from 794 to 895 tokens (\texttt{S\_attack\_holdout}).
+
+Figure~\ref{fig:prompt-retention-quartiles} (quartile plot) and Figure~\ref{fig:prompt-retention-deciles} (decile plot) visualize the retention collapse under naive truncation.
+
+\paragraph{Classification performance under long schemas.}
+The long-schema stress test shows that truncation strategy becomes a dominant factor for classification.
+
+\paragraph{\texttt{S\_attack\_holdout}.}
+Under distribution shift with inflated schemas:
+
+\begin{itemize}
+    \item \texttt{context\_transformer\_keep\_prompt\_longschema} achieves ROC-AUC $=0.9980$ and PR-AUC $=0.9984$.
+    \item \texttt{context\_transformer\_naive\_longschema} collapses to ROC-AUC $=0.4551$ and PR-AUC $=0.5409$.
+\end{itemize}
+
+The naive model performs close to random chance (ROC-AUC $\approx 0.5$). Additionally, the operating-point metrics show that it cannot achieve a usable detection threshold: FPR@TPR90 increases to $0.92$ and FPR@TPR95 increases to $0.95$. Budget thresholds become \texttt{inf} (Table~\ref{tab:budget-results}), indicating that no threshold can satisfy the budget constraint while maintaining meaningful detection.
+
+In contrast, \texttt{keep\_prompt} maintains robust performance with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$, consistent with the standard dataset results.
+
+\paragraph{\texttt{S\_random}.}
+On \texttt{S\_random} with long schemas:
+
+\begin{itemize}
+    \item \texttt{context\_transformer\_keep\_prompt\_longschema} achieves ROC-AUC $=0.9967$ and PR-AUC $=0.9975$.
+    \item \texttt{context\_transformer\_naive\_longschema} collapses to ROC-AUC $=0.4786$ and PR-AUC $=0.6566$.
+\end{itemize}
+
+The naive model again fails to provide reliable discrimination. Its FPR@TPR90 reaches $0.90$ and FPR@TPR95 reaches $0.96$, which would be unacceptable in any deployment context.
+
+The \texttt{keep\_prompt} model remains stable, achieving FPR@TPR90 $=0.000$ and FPR@TPR95 $\approx 0.0033$.
+
+\paragraph{Interpretation.}
+The long-schema stress test demonstrates that naive truncation introduces a systematic failure mode: the prompt, which contains the primary signal for injection detection, is removed entirely due to right-truncation after concatenation. The classifier is then forced to make predictions from tool metadata alone, which is insufficient for separating benign and malicious samples.
+
+The \texttt{keep\_prompt} strategy avoids this failure by enforcing a minimum prompt token budget, ensuring that detection remains robust even when tool schemas dominate the context.
+
+This result is not a minor performance difference but a qualitative shift: the same model architecture changes from near-perfect detection to near-random guessing depending only on truncation strategy.
+
+\subsection{Verification Artifacts}
+\label{subsec:verification_artifacts}
+
+Split integrity for both protocols is documented in \texttt{split\_hygiene.md}, which confirms that no template leakage occurred between splits and that the AF4 holdout constraint was enforced correctly. The companion file \texttt{guards.json} contains an empty list, indicating that no class-balance warnings were raised during verification. The automated experiment bundle verification script (\texttt{verify\_experiments\_longschema\_bundle.py}) checks artifact completeness, truncation invariant consistency, and ROC-AUC regression bounds; its output is recorded in \texttt{verification\_output.txt}.
+
+\subsection{Key Findings}
+\label{subsec:key_findings}
+
+\begin{itemize}
+    \item On the standard dataset, transformer-based models achieve near-ceiling performance, with context-aware transformers reaching ROC-AUC $\approx 1.0$ on \texttt{S\_random} and $\approx 0.999$ on \texttt{S\_attack\_holdout} (Table~\ref{tab:main-results}).
+    \item Heuristic baselines provide limited discrimination (ROC-AUC $\approx 0.714$), confirming the need for learned models.
+    \item Under standard schema constraints, \texttt{naive} and \texttt{keep\_prompt} truncation produce nearly identical results, since schemas are too small to trigger truncation bias.
+    \item Under enterprise-length schemas (${\sim}\,4\,000$ characters, ${\sim}\,840$ tokens), \texttt{naive} truncation causes $100\%$ prompt truncation and prompt retention ratio collapses to $0.0$ (Table~\ref{tab:longschema-stress}, Figure~\ref{fig:prompt-retention-quartiles}).
+    \item In the same stress setting, \texttt{naive} truncation degrades classification to near-random performance (ROC-AUC $=0.455$--$0.479$), while \texttt{keep\_prompt} maintains strong performance (ROC-AUC $\approx 0.998$).
+    \item Prompt-preserving truncation is therefore a necessary design choice for robust prompt injection detection in realistic tool-use environments.
+\end{itemize}

@@ -1,0 +1,393 @@
+\section{Methodology and Approach}
+\label{sec:methodology}
+
+This chapter describes the methodology used to design, implement, and evaluate \textit{ToolShield}, a prompt injection detection system for tool-using LLM agents. The approach combines controlled synthetic dataset generation, multiple model baselines, protocol-driven evaluation splits, and reproducibility-focused experiment automation.
+
+\subsection{Problem Setting}
+\label{subsec:problem_setting}
+
+Tool-using LLM agents extend natural language models with external function calls (tools), such as exporting reports, sending emails, or accessing structured databases. In such settings, a user prompt is not only interpreted as text, but may trigger execution of privileged tool actions. This creates a security risk: malicious users can embed prompt injection attacks designed to override system intent, exfiltrate data, or force unintended tool calls.
+
+ToolShield addresses this risk by framing prompt injection detection as a supervised binary classification task. Each input consists of a user prompt and associated tool context (role framing, tool name, tool schema, tool description). The output is a probability score indicating whether the prompt is benign or malicious.
+
+\subsection{Scope and Assumptions}
+\label{subsec:scope_assumptions}
+
+ToolShield addresses the problem of detecting prompt injection attempts in tool-using LLM systems. The core goal is to classify a given tool invocation request (prompt plus tool context) as either benign or malicious, such that malicious inputs can be blocked before tool execution. ToolShield does not claim to prevent all forms of LLM misuse, nor does it attempt to make the underlying LLM robust against adversarial instructions. Instead, it focuses on a practical detection layer that can be deployed as an external safeguard.
+
+\paragraph{System scope.}
+The scope of this thesis is limited to \emph{single-turn} prompt injection detection. Each sample consists of a single user prompt and associated tool metadata (e.g., tool schema, tool description, and role framing). Multi-step agent workflows, memory-augmented reasoning, and iterative tool chains are not explicitly modeled. Consequently, ToolShield does not capture attacks that emerge only across multiple conversational turns or through gradual manipulation over time.
+
+\paragraph{Attacker model.}
+We assume an attacker who can fully control the user prompt and aims to induce the LLM to violate tool usage constraints, exfiltrate sensitive information, or generate unsafe tool arguments. The attacker is assumed to be adaptive but does not have direct control over the system prompt or tool implementation. This reflects common deployment settings where tool schemas and system instructions are provided by the application, while user input remains untrusted. ToolShield does not assume that the attacker has access to model parameters or training data; the threat model is therefore aligned with black-box prompt-based attacks.
+
+\paragraph{Tool schema availability.}
+ToolShield assumes that tool schemas and descriptions are available to the detection system at inference time, since they are typically included in the LLM input context for tool selection and argument generation. The context-aware models explicitly incorporate this information. If schemas are hidden, incomplete, or dynamically generated in ways that cannot be reproduced by the detector, ToolShield's context-based approach may be less effective.
+
+\paragraph{Dataset and evaluation assumptions.}
+This thesis uses a synthetic dataset generated from controlled templates and predefined attack families. Synthetic generation enables reproducible experiments, controlled manipulation of schema length, and explicit enforcement of evaluation protocols such as \texttt{S\_attack\_holdout}. This design is necessary to isolate specific hypotheses, particularly the truncation bias failure mode under long schemas. However, synthetic prompts may not fully reflect the linguistic diversity, contextual ambiguity, and attacker creativity present in real-world deployments.
+
+\paragraph{Out of scope.}
+Several important aspects of real-world LLM security are out of scope. First, ToolShield does not evaluate multi-turn prompt injection scenarios or attacks that exploit agent memory and conversation history. Second, the experiments do not include proprietary enterprise tools or confidential schemas, as only synthetic schemas are used. Third, multilingual prompt injection attacks are not evaluated unless explicitly included in the dataset configuration; therefore, no general claims are made about performance outside English-language prompts. Finally, ToolShield does not address adversarial adaptation against the detector itself (e.g., evasion attacks targeting the classifier), nor does it consider end-to-end defenses such as sandboxing or formal tool authorization.
+
+In summary, ToolShield is evaluated as a reproducible prompt injection detection component for single-turn tool-use scenarios under controlled experimental assumptions. The results should be interpreted as evidence for failure modes and mitigation strategies in this setting, rather than as a complete solution to LLM agent security.
+
+\subsection{Dataset Generation}
+\label{subsec:dataset_generation}
+
+Since no widely accepted benchmark exists for prompt injection detection in structured tool-use environments, a synthetic dataset was generated. The dataset generation pipeline is implemented as part of the ToolShield CLI (\texttt{toolshield generate}) and produces a \texttt{dataset.jsonl} file containing labeled records.
+
+\subsubsection{Record Format}
+
+Each dataset record is represented as a structured JSON object containing the following fields:
+
+\begin{itemize}
+    \item \textbf{prompt}: the user input string.
+    \item \textbf{label}: binary target variable (0 = benign, 1 = attack).
+    \item \textbf{tool\_name}: identifier of the tool that the agent is expected to call.
+    \item \textbf{tool\_schema}: JSON schema describing tool parameters.
+    \item \textbf{tool\_description}: natural language description of the tool.
+    \item \textbf{role\_instruction}: system-style instruction that defines the assistant role.
+    \item \textbf{attack\_family}: categorical field AF1--AF4 (only for attack samples).
+    \item \textbf{template\_id}: identifier for the template used during generation (for leakage control).
+\end{itemize}
+
+This structured format enables experiments that explicitly model realistic tool-use environments where schema and tool metadata are available as context.
+
+\subsubsection{Benign Prompt Generation}
+
+Benign prompts are generated from templated requests consistent with the tool set (e.g., asking to export a report, summarize text, query a database). Templates are parameterized to create diverse surface forms while preserving semantic intent. This ensures that benign samples cover multiple syntactic styles without introducing attack-like patterns.
+
+\subsubsection{Attack Prompt Generation}
+
+Attack samples are generated using prompt injection templates designed to simulate real adversarial behavior. Each attack prompt is constructed by embedding malicious instructions into otherwise plausible user requests. Attack prompts aim to override the agent's intended policy, manipulate tool execution, or leak hidden context.
+
+The generation process ensures that attacks are distributed across multiple families (AF1--AF4), which are described in Section~\ref{subsec:attack_families}.
+
+\subsubsection{Dataset Output and Manifest}
+
+Dataset generation outputs both the JSONL dataset and a manifest file (\texttt{manifest.json}) containing:
+
+\begin{itemize}
+    \item total sample count,
+    \item label distribution,
+    \item generation seed,
+    \item tool and template metadata.
+\end{itemize}
+
+The manifest serves as a reproducibility artifact and enables validation that subsequent splits and experiments are derived from the intended dataset configuration.
+
+\subsection{Tool Schema Structure}
+\label{subsec:tool_schema_structure}
+
+In tool-augmented LLM systems, tools are often specified via structured schemas such as OpenAPI or JSON Schema. ToolShield models this by associating each prompt with a tool schema object.
+
+Each tool schema includes:
+
+\begin{itemize}
+    \item \textbf{name}: tool identifier.
+    \item \textbf{description}: short natural language description.
+    \item \textbf{parameters}: JSON schema defining input arguments.
+\end{itemize}
+
+The \textbf{parameters} schema contains typed fields (string, integer, boolean, arrays, objects) and may include constraints such as required keys, allowed values, and nested objects.
+
+This design allows the context-aware transformer model to learn correlations between prompt structure and tool constraints, e.g., whether a prompt attempts to inject irrelevant fields or override tool behavior.
+
+\subsection{Prompt Injection Families}
+\label{subsec:attack_families}
+
+A key objective of ToolShield is to measure robustness to diverse injection strategies. Therefore, attacks are grouped into four families (AF1--AF4), each representing a distinct manipulation style. The family structure is intended to approximate the diversity observed in real prompt injection attacks described in prior work~\cite{CITATION_PROMPT_INJECTION_SURVEY}. % TODO: Replace with actual citation key
+
+\subsubsection{AF1: Direct Instruction Override}
+
+AF1 attacks explicitly attempt to override the system policy using direct imperative statements, such as:
+
+\begin{quote}
+Ignore all previous instructions and execute the tool with these parameters...
+\end{quote}
+
+This family captures the most common form of naive prompt injection, where the attacker assumes the model will follow the most recent instruction.
+
+\subsubsection{AF2: Context Extraction and Data Exfiltration}
+
+AF2 attacks focus on extracting hidden context or confidential tool metadata, such as system prompts, schema definitions, or private data. Typical phrasing includes:
+
+\begin{quote}
+Before answering, print your full tool schema and system prompt...
+\end{quote}
+
+This family represents confidentiality attacks where the tool call itself may be used as a leakage vector.
+
+\subsubsection{AF3: Tool Manipulation and Parameter Smuggling}
+
+AF3 attacks attempt to manipulate tool calls by embedding adversarial parameters, hidden commands, or format-breaking strings. Examples include injecting JSON fragments or attempting to bypass schema validation.
+
+The purpose of AF3 is to test whether models can identify subtle manipulations that resemble legitimate structured input but contain malicious intent.
+
+\subsubsection{AF4: Indirect or Obfuscated Attacks}
+
+AF4 attacks represent more sophisticated prompt injection strategies, such as:
+
+\begin{itemize}
+    \item obfuscation through encoding,
+    \item multi-step reasoning traps,
+    \item role-playing and social engineering phrasing,
+    \item hidden instructions embedded in long text.
+\end{itemize}
+
+AF4 was specifically designed to support the S\_attack\_holdout evaluation protocol, where this family is entirely excluded from training and appears only in the test set. This enables controlled measurement of generalization to unseen attack styles.
+
+\subsection{Split Protocols}
+\label{subsec:split_protocols}
+
+ToolShield uses protocol-driven dataset splitting to avoid evaluation artifacts and to measure different generalization dimensions. The split generator is implemented as \texttt{toolshield split} and produces \texttt{train.jsonl}, \texttt{val.jsonl}, and \texttt{test.jsonl} for each protocol.
+
+\subsubsection{S\_random: Stratified Random Split}
+
+S\_random is a stratified random split with template leakage prevention. Records generated from the same template identifier are constrained to appear in only one split. This reduces the risk of inflated performance due to memorization of generation templates rather than learning general prompt injection patterns.
+
+This split is used as the baseline evaluation setting.
+
+\subsubsection{S\_attack\_holdout: Attack Family Holdout}
+
+S\_attack\_holdout excludes the AF4 attack family entirely from training and validation. AF4 samples appear only in the test set. Benign samples remain distributed across all splits.
+
+This protocol evaluates generalization under distribution shift: the model must detect attacks that are structurally different from those seen during training.
+
+\subsubsection{S\_tool\_holdout: Tool Holdout}
+
+S\_tool\_holdout excludes one entire tool (e.g., \texttt{exportReport}) from training and validation. All samples involving that tool appear only in the test set.
+
+This protocol measures generalization across tools and schemas, testing whether models learn attack semantics rather than tool-specific patterns.
+
+\subsection{Models Implemented}
+\label{subsec:models}
+
+ToolShield implements five model families. Each model outputs a continuous risk score, enabling both threshold-free evaluation (ROC-AUC, PR-AUC) and threshold-based deployment analysis.
+
+\subsubsection{Heuristic Baseline}
+\label{subsec:heuristic_model}
+
+The heuristic model is a rule-based detector relying on keyword and pattern matching. It assigns a binary prediction based on the presence of suspicious phrases (e.g., ``ignore previous instructions'', ``system prompt'', ``developer message'', ``execute tool'').
+
+This baseline represents a lightweight but brittle approach commonly used in practical filtering systems.
+
+\subsubsection{Scored Heuristic Baseline}
+\label{subsec:heuristic_score_model}
+
+The heuristic\_score model extends the heuristic baseline by producing a continuous score. Instead of a hard decision, it aggregates weighted signals from multiple suspicious features.
+
+This model enables ranking-based evaluation and provides a more realistic baseline for security systems that operate at adjustable thresholds.
+
+\subsubsection{TF-IDF + Logistic Regression}
+\label{subsec:tfidf_model}
+
+The TF-IDF + Logistic Regression model represents a classical supervised text classifier. Prompts are vectorized using TF-IDF features, and a logistic regression classifier is trained on the resulting sparse representation.
+
+The model is efficient at inference and serves as a strong baseline for detecting common lexical patterns in prompt injection attacks.
+
+\subsubsection{Transformer (Text-Only)}
+\label{subsec:transformer_model}
+
+The transformer baseline fine-tunes a pretrained encoder model (DistilRoBERTa) with a binary classification head. The input consists only of the user prompt text, without tool metadata.
+
+The purpose of this baseline is to evaluate whether prompt injection attacks can be detected reliably without tool context, and to compare performance against classical bag-of-words methods.
+
+\subsubsection{Context Transformer}
+\label{subsec:context_transformer_model}
+
+The context transformer extends the text-only transformer by incorporating tool context fields:
+
+\begin{itemize}
+    \item role instruction,
+    \item tool name,
+    \item tool schema,
+    \item tool description,
+    \item user prompt.
+\end{itemize}
+
+These fields are concatenated into a single sequence before tokenization. The model is trained end-to-end using the same binary classification objective.
+
+The motivation is that many injection attacks exploit tool-related instructions, and therefore tool context should improve robustness.
+
+\subsection{Prompt-Preserving Truncation Strategy}
+\label{subsec:prompt_preserving_truncation}
+
+A central contribution of ToolShield is the identification and mitigation of truncation bias in context-augmented transformers.
+
+In standard transformer tokenization pipelines, long sequences are truncated from the right once the maximum token budget is exceeded. If the input is constructed as:
+
+\begin{quote}
+context $\rightarrow$ prompt
+\end{quote}
+
+then right truncation disproportionately removes the prompt, even though the prompt contains the primary attack signal.
+
+\subsubsection{Naive Truncation}
+
+In the naive strategy, context and prompt are concatenated into one string and passed to the tokenizer with a fixed \texttt{max\_length}. The tokenizer applies standard truncation, typically removing tokens from the tail.
+
+This can result in complete loss of the prompt when tool schemas are long.
+
+\subsubsection{Keep-Prompt Truncation}
+
+In the keep\_prompt strategy, the model tokenizes context and prompt separately. A minimum prompt token budget (\texttt{prompt\_min\_tokens}) is reserved. Remaining tokens are allocated to context.
+
+Formally, given a token budget $B$:
+
+\begin{itemize}
+    \item allocate at least $P_{\min}$ tokens to the prompt,
+    \item allocate $B - P_{\min}$ tokens to context,
+    \item if the prompt uses fewer than $P_{\min}$ tokens, the unused budget is reallocated to context.
+\end{itemize}
+
+This guarantees that prompt content remains visible to the classifier even when schemas are large. This strategy was validated empirically in the long-schema stress test (Results Chapter).
+
+\subsection{Training Setup}
+\label{subsec:training_setup}
+
+All models were trained using consistent procedures:
+
+\begin{itemize}
+    \item Training split used for fitting parameters.
+    \item Validation split used for early stopping and threshold selection.
+    \item Test split used only for final evaluation.
+\end{itemize}
+
+\subsubsection{Hyperparameters}
+
+Transformer models were fine-tuned with:
+
+\begin{itemize}
+    \item pretrained backbone: DistilRoBERTa,
+    \item maximum sequence length: 256 tokens (context transformer),
+    \item learning rate: $2 \cdot 10^{-5}$,
+    \item batch size: 8--16 depending on configuration,
+    \item warmup steps: 20--100,
+    \item number of epochs: 3.
+\end{itemize}
+
+Non-neural baselines used default scikit-learn training settings with fixed random seeds.
+
+\subsubsection{Seed Control}
+
+All training procedures support explicit seed control. Seeds affect:
+
+\begin{itemize}
+    \item dataset generation,
+    \item split generation,
+    \item model initialization,
+    \item shuffling order during training.
+\end{itemize}
+
+Neural models were evaluated across three seeds (0, 1, 2) to reduce variance and to support mean/std reporting.
+
+\subsection{Evaluation Pipeline}
+\label{subsec:evaluation_pipeline}
+
+Evaluation is implemented via \texttt{toolshield eval} and produces a structured metrics output file (\texttt{metrics.json}) for each run.
+
+\subsubsection{Core Metrics}
+
+ToolShield reports the following primary metrics:
+
+\begin{itemize}
+    \item \textbf{ROC-AUC:} measures ranking quality independent of threshold.
+    \item \textbf{PR-AUC:} measures precision-recall performance under class imbalance.
+    \item \textbf{FPR@TPR90 / FPR@TPR95:} false positive rate required to achieve 90\% or 95\% true positive rate.
+\end{itemize}
+
+FPR@TPR metrics are relevant for deployment because they quantify the benign traffic blocked to catch a fixed proportion of attacks.
+
+\subsubsection{Attack Success Rate (ASR) Reduction}
+
+To evaluate security effectiveness, ToolShield reports ASR reduction. ASR is defined as the fraction of malicious prompts that bypass the detector.
+
+ASR reduction is computed by comparing ASR before filtering (baseline ASR = 1.0) and ASR after filtering at a given threshold. A high ASR reduction indicates that most attacks are blocked.
+
+\subsubsection{Budget-Based Threshold Selection}
+
+ToolShield additionally supports budget evaluation, where thresholds are chosen based on a maximum allowed false-positive budget (1\%, 3\%, 5\%). Thresholds are selected on the validation split and then evaluated on the test split.
+
+This simulates real deployment constraints where blocking too many benign prompts is unacceptable.
+
+\subsubsection{Latency Measurement}
+
+Inference latency is measured using timed prediction runs. ToolShield reports P50 and P95 latency percentiles under warm-start conditions.
+
+Latency is critical for evaluating whether the model is feasible as a runtime guardrail in LLM tool pipelines.
+
+\subsection{Aggregation and Reporting}
+\label{subsec:aggregation_reporting}
+
+Each run produces an individual \texttt{metrics.json} file. These are aggregated into summary tables using \texttt{aggregate\_experiments.py}, which generates:
+
+\begin{itemize}
+    \item \texttt{raw\_results.csv}: per-seed results.
+    \item \texttt{summary.csv}: mean and standard deviation across seeds.
+    \item \texttt{results.json}: combined machine-readable output.
+\end{itemize}
+
+Additionally, LaTeX tables are generated from \texttt{summary.csv} using \texttt{generate\_latex\_from\_summary.py}, enabling direct integration into the thesis.
+
+\subsection{Determinism and Reproducibility Measures}
+\label{subsec:reproducibility}
+
+A core design goal of ToolShield is that all reported results can be reproduced deterministically. The project includes multiple mechanisms to support reproducibility:
+
+\subsubsection{Manifest and Environment Freeze}
+
+Each dataset generation produces a manifest with seed and label distribution. Additionally, the environment is captured in \texttt{environment\_freeze.txt}, which lists package versions (torch, transformers, scikit-learn, etc.).
+
+\subsubsection{Automated Verification Scripts}
+
+ToolShield includes verification scripts that ensure experimental integrity:
+
+\begin{itemize}
+    \item split hygiene checks: ensure no template leakage, correct attack family holdout, correct tool holdout.
+    \item experiment bundle verifier: validates that reported summary metrics match expected qualitative behavior.
+\end{itemize}
+
+These scripts output human-readable logs suitable for appendix inclusion.
+
+\subsubsection{Controlled Experiment Automation}
+
+The full experiment suite is reproducible via Makefile targets. For example:
+
+\begin{itemize}
+    \item \texttt{make compare\_truncation}
+    \item \texttt{make compare\_truncation\_longschema}
+    \item \texttt{make verify\_longschema\_results}
+\end{itemize}
+
+These targets execute the complete pipeline: dataset generation, splitting, training, evaluation, aggregation, reporting, and verification.
+
+\subsubsection{Run Manifests}
+
+The script \texttt{write\_run\_manifest.py} generates a run manifest capturing:
+
+\begin{itemize}
+    \item git commit hash,
+    \item executed commands,
+    \item dataset configuration,
+    \item split protocol settings,
+    \item model configurations.
+\end{itemize}
+
+This ensures that reported results are traceable to an exact repository state.
+
+\subsection{Summary}
+\label{subsec:methodology_summary}
+
+In summary, ToolShield was developed using a controlled experimental methodology combining:
+
+\begin{itemize}
+    \item synthetic dataset generation with explicit schema context,
+    \item multiple baseline and neural classifiers,
+    \item protocol-driven evaluation for generalization testing,
+    \item prompt-preserving truncation to mitigate schema-driven bias,
+    \item automated reporting and verification for reproducibility.
+\end{itemize}
+
+This methodology enables systematic evaluation of prompt injection detection under both standard and enterprise-like tool schema conditions, supporting robust conclusions about truncation bias and model generalization.
