@@ -6,7 +6,7 @@ Large Language Models (LLMs) are increasingly deployed in systems that can invok
 This thesis addresses the problem of detecting prompt injection attempts in tool-using LLM systems. The goal is to develop a detection mechanism that can be deployed as a gating layer before tool execution, classifying tool-use prompts as benign or malicious. In addition to baseline approaches (heuristics, TF-IDF, and transformer classifiers), this thesis investigates a critical implementation issue for context-aware detection models: how token budget allocation and truncation can systematically remove the user prompt under long tool schemas.
 
 \paragraph{Definition (Prompt Injection).}
-In the context of this thesis, \emph{prompt injection} refers to a malicious user input that attempts to override the intended instruction hierarchy of a tool-using LLM system. Concretely, the attacker aims to cause the model to disregard system or tool constraints (e.g., role instructions or tool schemas) and instead follow adversarial directives embedded in the user prompt.
+In the context of this thesis, \emph{prompt injection} refers to a malicious user input that attempts to override the intended instruction hierarchy of a tool-using LLM system. Concretely, the attacker aims to cause the model to disregard system or tool constraints (e.g., role instructions or tool schemas) and instead follow adversarial directives embedded in the user prompt. This includes attempts to induce malicious or unauthorized tool invocations by manipulating the generated tool arguments.
 
 \subsection{Research Questions}
 \label{subsec:research_questions}
