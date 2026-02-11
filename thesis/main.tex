@@ -18,7 +18,7 @@
   parskip=half-,
   custommargins=true,
   marginpar=false,
-  accept-missing-logos=true,
+  accept-missing-logos=true, % Temporarily allow missing 'tuda_logo.pdf'; download from TU intranet and place it in thesis/ to remove this.
 ]{tudapub}
 
 % ── Packages ─────────────────────────────────────────────────────────────────
@@ -28,6 +28,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \graphicspath{{figures/}}
+\usepackage{pdfpages} % for including signed declaration scan
 \usepackage{booktabs}
 \usepackage{verbatim}
 
@@ -41,15 +42,21 @@
   pdfkeywords={prompt injection, LLM, tool-use, truncation, security, TU Darmstadt},
 }
 
+% ── Submission metadata macros (fill before submission) ─────────────────────
+\newcommand{\SupervisorName}{[Supervisor Name]}
+\newcommand{\SecondReviewerName}{[Second Reviewer Name]}
+\newcommand{\SubmissionDate}{YYYY-MM-DD}
+\newcommand{\ExamDate}{YYYY-MM-DD}
+
 % ── Thesis metadata ──────────────────────────────────────────────────────────
 \title{ToolShield: Prompt Injection Detection for Tool-Using LLM Agents}
 \author{Giselle Evita}
-\reviewer{[Supervisor Name TBD] \and [Second Reviewer TBD]}
+\reviewer{\SupervisorName \and \SecondReviewerName}
 \department{inf}
 \institute{Department of Computer Science}
 %\group{[Research Group TBD]}  % only used for doctoral theses
-\submissiondate{\today}
-\examdate{\today}
+\submissiondate{\SubmissionDate}
+\examdate{\ExamDate}
 
 % ── Document ─────────────────────────────────────────────────────────────────
 \begin{document}
@@ -58,32 +65,24 @@
 
 % ── Declaration (Eigenständigkeitserklärung) ─────────────────────────────────
 % According to TU Darmstadt APB §22(7), a signed declaration must be included.
-% The affidavit was deactivated by default in tuda-ci v4. The official legally
-% binding text should be downloaded from:
+% The official, legally binding text is provided as a .docx on the TU website:
 %   https://www.tu-darmstadt.de/studieren/studierende_tu/studienorganisation_und_tucan/hilfe_und_faq/artikel_details_de_en_37824.de.jsp
-% Print the .docx, sign it, scan it, and include the signed PDF page here:
-%
-% \usepackage{pdfpages}
-% \includepdf[pages=-]{signed_declaration.pdf}
-%
-% For now, a placeholder declaration is included:
+% Workflow:
+%   1) Download the .docx template.
+%   2) Fill in your details, print it, sign it, and scan it.
+%   3) Save the scan as thesis/declaration/signed_declaration.pdf.
+%   4) Recompile this thesis; the signed page will be included automatically.
 \newpage
-\thispagestyle{empty}
-\vspace*{3cm}
-\begin{center}
-\textbf{\Large Erklärung zur Abschlussarbeit\\gemäß §22 Abs.\ 7 APB der TU Darmstadt}
-\end{center}
-\vspace{1.5cm}
-\noindent
-Hiermit versichere ich, Giselle Evita, die vorliegende Bachelor-Thesis ohne Hilfe Dritter und nur mit den angegebenen Quellen und Hilfsmitteln angefertigt zu haben. Alle Stellen, die Quellen entnommen wurden, sind als solche kenntlich gemacht worden. Diese Arbeit hat in gleicher oder ähnlicher Form noch keiner Prüfungsbehörde vorgelegen.
-
-\noindent
-Mir ist bekannt, dass im Fall eines Plagiats (§38 Abs.\ 2 APB) ein Täuschungsversuch vorliegt, der dazu führen kann, dass die Prüfung als ablegt und nicht bestanden betrachtet und die Vergabe des Hochschulgrades entzogen wird.
-
-\vspace{2cm}
-\noindent
-Darmstadt, \today \hfill \makebox[6cm]{\dotfill}\\
-\mbox{} \hfill {\small Giselle Evita}
+\IfFileExists{declaration/signed_declaration.pdf}{%
+  \includepdf[pages=-]{declaration/signed_declaration.pdf}%
+}{%
+  \thispagestyle{empty}%
+  \vspace*{3cm}%
+  \begin{center}
+    \textbf{Signed declaration PDF not found.}\\[1em]
+    Please place \texttt{signed_declaration.pdf} in \texttt{thesis/declaration/} and recompile.%
+  \end{center}%
+}
 
 % ── Abstract ─────────────────────────────────────────────────────────────────
 \newpage
