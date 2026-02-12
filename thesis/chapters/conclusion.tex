@@ -3,7 +3,7 @@
 
 This thesis addressed the problem of detecting prompt injection attacks in tool-using LLM systems. In such systems, user-provided prompts are combined with privileged tool context (e.g., tool schemas and descriptions) and forwarded to an LLM that decides whether and how to invoke external tools. This creates a security risk: attackers may attempt to override system constraints or manipulate tool calls through prompt injection, potentially leading to unauthorized actions or data leakage.
 
-The primary research goal of this thesis was to evaluate whether prompt injection detection can be implemented as a practical, reproducible classification pipeline, and whether context-augmented detection remains robust under realistic tool schema conditions. In particular, the work investigated how truncation behavior in context-augmented transformer models affects security performance.
+The primary research goal of this thesis was to evaluate whether prompt injection detection can be implemented as a practical, reproducible classification pipeline, and whether context-augmented detection remains stable under the evaluated tool schema conditions. In particular, the work investigated how truncation behavior in context-augmented transformer models affects security performance.
 
 \section{Summary of Findings}
 \label{subsec:conclusion_summary}
@@ -14,21 +14,21 @@ The empirical evaluation demonstrated that multiple baseline approaches can achi
 
 Under the distribution shift protocol \texttt{S\_attack\_holdout}, which holds out an entire attack family during training, the best-performing transformer-based models retained strong performance. This indicates that the learned detectors generalize beyond memorization of attack templates, at least within the benchmark scope (\textbf{RQ2}).
 
-A key result of this thesis is that truncation strategy becomes a critical design factor once tool schemas exceed realistic enterprise sizes. Under the standard dataset configuration with a short schema constraint (\texttt{max\_schema\_length=200}), the \texttt{naive} and \texttt{keep\_prompt} truncation strategies produced similar performance. This is consistent with the fact that schema context remained too small to induce systematic prompt loss.
+A key result of this thesis is that truncation strategy becomes a critical design factor once tool schemas exceed production-scale sizes in the stress test. Under the standard dataset configuration with a short schema constraint (\texttt{max\_schema\_length=200}), the \texttt{naive} and \texttt{keep\_prompt} truncation strategies produced similar performance. This is consistent with the fact that schema context remained too small to induce systematic prompt loss.
 
-However, the enterprise long-schema stress test demonstrated a qualitative failure mode. When tool schemas were inflated to approximately 4\,000 characters (approximately 840 schema tokens), naive right-truncation removed the prompt content entirely in all evaluated samples. Under this condition, the classifier's performance collapsed to near-random discrimination, while the prompt-preserving truncation strategy remained stable and retained strong detection performance. This result shows that context-augmented prompt injection detection is not only a modeling problem but also a systems-level input construction problem: if the prompt is truncated away, even strong architectures cannot recover (\textbf{RQ3}). These findings confirm both \textbf{H1} (naive truncation causes catastrophic degradation under long schemas) and \textbf{H2} (prompt-preserving truncation mitigates the failure).
+However, the long-schema stress test demonstrated a qualitative failure mode. When tool schemas were inflated to approximately 4\,000 characters (approximately 840 schema tokens), naive right-truncation removed the prompt content entirely in all evaluated samples. Under this condition, the classifier's performance collapsed to near-random discrimination, while the prompt-preserving truncation strategy remained stable and retained strong detection performance. This result shows that context-augmented prompt injection detection is not only a modeling problem but also a systems-level input construction problem: if the prompt is truncated away, even strong architectures cannot recover under these conditions (\textbf{RQ3}). These findings confirm both \textbf{H1} (naive truncation causes severe degradation under long schemas in the stress test) and \textbf{H2} (prompt-preserving truncation mitigates the failure in this setting).
 
 \section{Main Contribution}
 \label{subsec:main_contribution}
 
-The main technical contribution of this thesis is a prompt-preserving truncation strategy for context-augmented transformer-based prompt injection detection. Instead of relying on standard right-truncation after concatenating tool context and user prompt, the proposed method enforces a minimum prompt token budget and allocates remaining tokens to tool context. This ensures that the primary attack surface---the user-controlled prompt---remains visible to the classifier even when enterprise tool schemas exceed the available context window.
+The main technical contribution of this thesis is a prompt-preserving truncation strategy for context-augmented transformer-based prompt injection detection. Instead of relying on standard right-truncation after concatenating tool context and user prompt, the proposed method enforces a minimum prompt token budget and allocates remaining tokens to tool context. This ensures that the primary attack surface---the user-controlled prompt---remains visible to the classifier even when large tool schemas exceed the available context window in the evaluated scenarios.
 
 In addition, this thesis provides an end-to-end reproducible evaluation pipeline, including dataset generation, split protocols, baseline implementations, evaluation scripts, and verification artifacts that document split integrity and experiment consistency.
 
 \section{Practical Recommendation}
 \label{subsec:practical_recommendation}
 
-Based on the findings, a clear recommendation for real-world LLM tool-use systems is that prompt injection detection mechanisms should explicitly control token budget allocation between tool context and user prompt. Systems that rely on naive concatenation and default truncation risk silently discarding the most security-relevant input under long schemas, leading to catastrophic degradation.
+Based on the findings, a clear recommendation for real-world LLM tool-use systems is that prompt injection detection mechanisms should explicitly control token budget allocation between tool context and user prompt. Systems that rely on naive concatenation and default truncation risk silently discarding the most security-relevant input under long schemas, leading to severe degradation.
 
 Therefore, any deployment of context-aware safety classifiers should implement prompt-preserving input construction, and latency overhead should be treated as a measurable engineering tradeoff rather than ignored. Furthermore, evaluation should include stress testing with long tool schemas and distribution shift protocols, as standard random splits may not reveal truncation-related failure modes.
 
@@ -37,11 +37,11 @@ Therefore, any deployment of context-aware safety classifiers should implement p
 
 Several directions remain open for future work.
 
-First, evaluation on real-world datasets and authentic enterprise tool schemas would strengthen external validity. Synthetic benchmarks enable controlled experimentation, but real tool schemas contain complex semantics, nested structures, and domain-specific constraints that may influence both attack strategies and detection behavior.
+First, evaluation on real-world datasets and authentic large-organization tool schemas would strengthen external validity. Synthetic benchmarks enable controlled experimentation, but real tool schemas contain complex semantics, nested structures, and domain-specific constraints that may influence both attack strategies and detection behavior.
 
 Second, future work should extend the evaluation beyond single-turn classification. Multi-turn agents may accumulate injected instructions over time, and tool outputs may themselves introduce indirect injection opportunities. A more complete security evaluation would therefore include multi-step agent traces and memory effects.
 
-Third, tool chaining and tool composition attacks should be explored. In realistic agent workflows, multiple tools are invoked sequentially, and attackers may exploit intermediate tool outputs to compromise downstream tool calls.
+Third, tool chaining and tool composition attacks should be explored. In practical agent workflows, multiple tools are invoked sequentially, and attackers may exploit intermediate tool outputs to compromise downstream tool calls.
 
 Fourth, adaptive attacker models should be considered. The current evaluation assumes static attacks, while real adversaries can iteratively refine prompts based on model behavior. Stronger adversaries could be modeled through automated search or reinforcement learning based prompt optimization.
 
@@ -52,4 +52,4 @@ Sixth, multilingual prompt injection attacks represent an important extension. R
 Finally, runtime optimization of the prompt-preserving truncation pipeline is a practical engineering goal. The \texttt{keep\_prompt} strategy introduces overhead due to multi-pass tokenization and budget allocation. Future work could investigate caching of tool schema encodings, optimized batching strategies, or more efficient model architectures to reduce latency while preserving robustness.
 
 \paragraph{Final statement.}
-This thesis demonstrates that prompt-preserving truncation is a necessary design principle for robust prompt injection detection in context-augmented LLM tool-use systems, and provides a reproducible benchmark pipeline that empirically validates this failure mode under enterprise-length tool schemas.
+This thesis demonstrates that prompt-preserving truncation is a necessary design principle for effective prompt injection detection in context-augmented LLM tool-use systems under the evaluated conditions, and provides a reproducible benchmark pipeline that empirically validates this failure mode under production-scale tool schemas in the stress test.

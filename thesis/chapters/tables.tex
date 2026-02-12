@@ -128,11 +128,11 @@ S\_random & naive & 0.0\% & 0.0\% & 0.0\% & 0.0\% & 0.0\% & 0.0\% & 2744.15 & 30
 \end{table}
 
 %----------------------------------------------------------------------
-% Table 6: Enterprise Long-Schema Stress Test
+% Table 6: Long-Schema Stress Test (Production-Scale Approximation)
 %----------------------------------------------------------------------
 \begin{table}[htbp]
 \centering
-\caption{Enterprise truncation stress test (4\,000-char schemas). Prompt truncation and model performance under naive vs \texttt{keep\_prompt} strategies.}
+\caption{Long-schema truncation stress test (4\,000-char schemas, production-scale approximation). Prompt truncation and model performance under naive vs \texttt{keep\_prompt} strategies.}
 \label{tab:longschema-stress}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{ll cc cccc cc}
@@ -156,7 +156,7 @@ S\_random & naive & 100.0\% & 0.000 & 0.479 & 0.657 & 0.900 & 0.960 & 4485.99 & 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/prompt_retention_quartiles.png}
-\caption{Prompt retention ratio by schema token length quartiles under enterprise-length schemas. Naive truncation collapses retention to zero across all bins, while \texttt{keep\_prompt} preserves the full prompt.}
+\caption{Prompt retention ratio by schema token length quartiles under production-scale schema lengths. Naive truncation collapses retention to zero across all bins, while \texttt{keep\_prompt} preserves the full prompt.}
 \label{fig:prompt-retention-quartiles}
 \end{figure}
 
@@ -166,6 +166,6 @@ S\_random & naive & 100.0\% & 0.000 & 0.479 & 0.657 & 0.900 & 0.960 & 4485.99 & 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=\textwidth]{figures/prompt_retention_deciles.png}
-\caption{Prompt retention ratio by schema token length deciles under enterprise-length schemas. Fine-grained view confirming that retention collapse under naive truncation is uniform across all schema length bins.}
+\caption{Prompt retention ratio by schema token length deciles under production-scale schema lengths. Fine-grained view confirming that retention collapse under naive truncation is uniform across all schema length bins.}
 \label{fig:prompt-retention-deciles}
 \end{figure}

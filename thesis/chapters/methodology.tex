@@ -13,7 +13,7 @@ ToolShield addresses this risk by framing prompt injection detection as a superv
 \section{Scope and Assumptions}
 \label{subsec:scope_assumptions}
 
-ToolShield addresses the problem of detecting prompt injection attempts in tool-using LLM systems. The core goal is to classify a given tool invocation request (prompt plus tool context) as either benign or malicious, such that malicious inputs can be blocked before tool execution. ToolShield does not claim to prevent all forms of LLM misuse, nor does it attempt to make the underlying LLM robust against adversarial instructions. Instead, it focuses on a practical detection layer that can be deployed as an external safeguard.
+ToolShield addresses the problem of detecting prompt injection attempts in tool-using LLM systems. The core goal is to classify a given tool invocation request (prompt plus tool context) as either benign or malicious, such that malicious inputs can be blocked before tool execution. ToolShield does not claim to prevent all forms of LLM misuse, nor does it attempt to make the underlying LLM resistant to adversarial instructions. Instead, it focuses on a practical detection layer that can be deployed as an external safeguard.
 
 \paragraph{System scope.}
 The scope of this thesis is limited to \emph{single-turn} prompt injection detection. Each sample consists of a single user prompt and associated tool metadata (e.g., tool schema, tool description, and role framing). Multi-step agent workflows, memory-augmented reasoning, and iterative tool chains are not explicitly modeled. Consequently, ToolShield does not capture attacks that emerge only across multiple conversational turns or through gradual manipulation over time.
@@ -28,7 +28,7 @@ ToolShield assumes that tool schemas and descriptions are available to the detec
 This thesis uses a synthetic dataset generated from controlled templates and predefined attack families. Synthetic generation enables reproducible experiments, controlled manipulation of schema length, and explicit enforcement of evaluation protocols such as \texttt{S\_attack\_holdout}. This design is necessary to isolate specific hypotheses, particularly the truncation bias failure mode under long schemas. However, synthetic prompts may not fully reflect the linguistic diversity, contextual ambiguity, and attacker creativity present in real-world deployments.
 
 \paragraph{Out of scope.}
-Several important aspects of real-world LLM security are out of scope. First, ToolShield does not evaluate multi-turn prompt injection scenarios or attacks that exploit agent memory and conversation history. Second, the experiments do not include proprietary enterprise tools or confidential schemas, as only synthetic schemas are used. Third, multilingual prompt injection attacks are not evaluated unless explicitly included in the dataset configuration; therefore, no general claims are made about performance outside English-language prompts. Finally, ToolShield does not address adversarial adaptation against the detector itself (e.g., evasion attacks targeting the classifier), nor does it consider end-to-end defenses such as sandboxing or formal tool authorization.
+Several important aspects of real-world LLM security are out of scope. First, ToolShield does not evaluate multi-turn prompt injection scenarios or attacks that exploit agent memory and conversation history. Second, the experiments do not include proprietary large-organization tools or confidential schemas, as only synthetic schemas are used. Third, multilingual prompt injection attacks are not evaluated unless explicitly included in the dataset configuration; therefore, no general claims are made about performance outside English-language prompts. Finally, ToolShield does not address adversarial adaptation against the detector itself (e.g., evasion attacks targeting the classifier), nor does it consider end-to-end defenses such as sandboxing or formal tool authorization.
 
 In summary, ToolShield is evaluated as a reproducible prompt injection detection component for single-turn tool-use scenarios under controlled experimental assumptions. The results should be interpreted as evidence for failure modes and mitigation strategies in this setting, rather than as a complete solution to LLM agent security.
 
@@ -52,7 +52,7 @@ Each dataset record is represented as a structured JSON object containing the fo
     \item \textbf{template\_id}: identifier for the template used during generation (for leakage control).
 \end{itemize}
 
-This structured format enables experiments that explicitly model realistic tool-use environments where schema and tool metadata are available as context.
+This structured format enables experiments that explicitly model deployment-like tool-use environments where schema and tool metadata are available as context.
 
 \subsection{Benign Prompt Generation}
 
@@ -178,7 +178,7 @@ This baseline represents a lightweight but brittle approach commonly used in pra
 
 The heuristic\_score model extends the heuristic baseline by producing a continuous score. Instead of a hard decision, it aggregates weighted signals from multiple suspicious features.
 
-This model enables ranking-based evaluation and provides a more realistic baseline for security systems that operate at adjustable thresholds.
+This model enables ranking-based evaluation and provides a closer-to-deployment baseline for security systems that operate at adjustable thresholds.
 
 \subsection{TF-IDF + Logistic Regression}
 \label{subsec:tfidf_model}
@@ -226,9 +226,10 @@ then right truncation disproportionately removes the prompt, even though the pro
 
 \subsection{Naive Truncation}
 
-In the naive strategy, context and prompt are concatenated into one string and passed to the tokenizer with a fixed \texttt{max\_length}. The tokenizer applies standard truncation, typically removing tokens from the tail.
+In the naive strategy, context and prompt are concatenated into one string and passed to the tokenizer with a fixed \texttt{max\_length}. The tokenizer applies standard right-side truncation, removing tokens from the tail of the concatenated sequence once the token budget is exceeded.
 
-This can result in complete loss of the prompt when tool schemas are long.
+Under the input layout used in ToolShield, this means that tokens from the user prompt are discarded first when tool schemas are long, which can result in complete loss of the prompt content.
+Formally, let $x = [c_1, \dots, c_m, p_1, \dots, p_n]$ be the concatenated context tokens followed by prompt tokens and let $B$ be the maximum sequence length; naive truncation returns the prefix $x_{1:B}$, so any portion where $m+n>B$ is removed from the rightmost end, which is entirely the prompt when $m\\geq B$.
 
 \subsection{Keep-Prompt Truncation}
 
@@ -242,7 +243,7 @@ Formally, given a token budget $B$:
     \item if the prompt uses fewer than $P_{\min}$ tokens, the unused budget is reallocated to context.
 \end{itemize}
 
-This guarantees that prompt content remains visible to the classifier even when schemas are large. This strategy was validated empirically in the long-schema stress test (Results Chapter).
+This design ensures, within the evaluated setup, that prompt content remains visible to the classifier even when schemas are large. This strategy was validated empirically in the long-schema stress test (Results Chapter).
 
 \section{Training Setup}
 \label{subsec:training_setup}
@@ -390,4 +391,4 @@ In summary, ToolShield was developed using a controlled experimental methodology
     \item automated reporting and verification for reproducibility.
 \end{itemize}
 
-This methodology enables systematic evaluation of prompt injection detection under both standard and enterprise-like tool schema conditions, supporting robust conclusions about truncation bias and model generalization.
+This methodology enables systematic evaluation of prompt injection detection under both standard and production-scale-like tool schema conditions, supporting qualified conclusions about truncation bias and model generalization.

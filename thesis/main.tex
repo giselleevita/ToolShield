@@ -18,7 +18,7 @@
   parskip=half-,
   custommargins=true,
   marginpar=false,
-  accept-missing-logos=true, % Temporarily allow missing 'tuda_logo.pdf'; download from TU intranet and place it in thesis/ to remove this.
+  accept-missing-logos=true, % Place tuda_logo.pdf in thesis/ and remove this option once the official logo file is in place.
 ]{tudapub}
 
 % ── Packages ─────────────────────────────────────────────────────────────────
@@ -43,10 +43,10 @@
 }
 
 % ── Submission metadata macros (fill before submission) ─────────────────────
-\newcommand{\SupervisorName}{[Supervisor Name]}
-\newcommand{\SecondReviewerName}{[Second Reviewer Name]}
-\newcommand{\SubmissionDate}{YYYY-MM-DD}
-\newcommand{\ExamDate}{YYYY-MM-DD}
+\newcommand{\SupervisorName}{(to be filled)}
+\newcommand{\SecondReviewerName}{(to be filled)}
+\newcommand{\SubmissionDate}{(to be filled)}
+\newcommand{\ExamDate}{(to be filled)}
 
 % ── Thesis metadata ──────────────────────────────────────────────────────────
 \title{ToolShield: Prompt Injection Detection for Tool-Using LLM Agents}
@@ -54,7 +54,7 @@
 \reviewer{\SupervisorName \and \SecondReviewerName}
 \department{inf}
 \institute{Department of Computer Science}
-%\group{[Research Group TBD]}  % only used for doctoral theses
+%\group{[Research Group to be filled]}  % only used for doctoral theses
 \submissiondate{\SubmissionDate}
 \examdate{\ExamDate}
 
@@ -65,29 +65,22 @@
 
 % ── Declaration (Eigenständigkeitserklärung) ─────────────────────────────────
 % According to TU Darmstadt APB §22(7), a signed declaration must be included.
-% The official, legally binding text is provided as a .docx on the TU website:
-%   https://www.tu-darmstadt.de/studieren/studierende_tu/studienorganisation_und_tucan/hilfe_und_faq/artikel_details_de_en_37824.de.jsp
-% Workflow:
-%   1) Download the .docx template.
-%   2) Fill in your details, print it, sign it, and scan it.
-%   3) Save the scan as thesis/declaration/signed_declaration.pdf.
-%   4) Recompile this thesis; the signed page will be included automatically.
-\newpage
-\IfFileExists{declaration/signed_declaration.pdf}{%
-  \includepdf[pages=-]{declaration/signed_declaration.pdf}%
+% Replace with signed declaration PDF before submission.
+% \includepdf[pages=-]{signed_declaration.pdf}
+\IfFileExists{signed_declaration.pdf}{%
+  \includepdf[pages=-]{signed_declaration.pdf}%
 }{%
-  \thispagestyle{empty}%
-  \vspace*{3cm}%
+  \newpage
+  \thispagestyle{empty}
   \begin{center}
-    \textbf{Signed declaration PDF not found.}\\[1em]
-    Please place \texttt{signed_declaration.pdf} in \texttt{thesis/declaration/} and recompile.%
-  \end{center}%
+  {\large Replace with signed declaration PDF: \texttt{signed\_declaration.pdf}.}
+  \end{center}
 }
 
 % ── Abstract ─────────────────────────────────────────────────────────────────
 \newpage
 \begin{abstract}
-This thesis addresses the problem of detecting prompt injection attacks in tool-using LLM systems, where user-provided prompts are combined with privileged tool context and forwarded to a language model for tool invocation. A prompt injection detection pipeline called ToolShield is presented, evaluating multiple baseline models (heuristics, TF-IDF, transformer classifiers) and context-augmented transformer detectors across controlled split protocols. The central finding is that naive right-truncation of context-augmented inputs can silently remove the user prompt under enterprise-length tool schemas, causing detection performance to collapse to near-random levels. A prompt-preserving truncation strategy is proposed that reserves a minimum token budget for the user prompt, maintaining robust detection even when tool schemas exceed the model's context window. All experiments are reproducible via deterministic seeds, automated verification scripts, and a public artifact bundle.
+This thesis addresses the problem of detecting prompt injection attacks in tool-using LLM systems, where user-provided prompts are combined with privileged tool context and forwarded to a language model for tool invocation. A prompt injection detection pipeline called ToolShield is presented, evaluating multiple baseline models (heuristics, TF-IDF, transformer classifiers) and context-augmented transformer detectors across controlled split protocols. The central finding is that naive right-truncation of context-augmented inputs can silently remove the user prompt under production-scale tool schemas in a controlled synthetic benchmark, causing detection performance to collapse to near-random levels. A prompt-preserving truncation strategy is proposed that reserves a minimum token budget for the user prompt, maintaining high detection performance under the evaluated long-schema conditions. All experiments are reproducible via deterministic seeds, automated verification scripts, and a public artifact bundle.
 \end{abstract}
 
 \tableofcontents

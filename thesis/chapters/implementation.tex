@@ -42,9 +42,9 @@ Each protocol writes its splits to a separate directory (e.g., \texttt{data/spli
 
 \subsection{Long-schema inflation}
 
-For the enterprise truncation stress test, the script \texttt{scripts/inflate\_schemas.py} transforms the base dataset by inflating tool schemas to a target character length (approximately 4\,000 characters). The inflated dataset is written to \texttt{data/dataset\_longschema.jsonl}, and subsequent splits are generated from it into \texttt{data/splits\_longschema/}.
+For the production-scale truncation stress test, the script \texttt{scripts/inflate\_schemas.py} transforms the base dataset by inflating tool schemas to a target character length (approximately 4\,000 characters). The inflated dataset is written to \texttt{data/dataset\_longschema.jsonl}, and subsequent splits are generated from it into \texttt{data/splits\_longschema/}.
 
-The inflation process appends realistic enterprise-style properties (nested objects, enumerated constraints, long descriptions) to each schema, controlled by a fixed random seed for reproducibility.
+The inflation process appends large-organization-inspired properties (nested objects, enumerated constraints, long descriptions) to each schema, controlled by a fixed random seed for reproducibility.
 
 \section{Training Pipeline}
 \label{subsec:training_pipeline}

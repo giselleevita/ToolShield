@@ -6,7 +6,7 @@ Prompt injection attacks have emerged as a central security challenge for Large 
 \section{Prompt Injection and Jailbreak Attacks}
 \label{subsec:rw_prompt_injection}
 
-Prompt injection refers to adversarial inputs designed to manipulate an LLM into ignoring intended instructions or safety constraints. Early work highlighted that LLM behavior is strongly shaped by natural language instructions, which can be exploited through carefully crafted prompts \cite{prompt_injection_survey}. Related research on \emph{jailbreaks} demonstrated that even aligned models can be induced to generate disallowed outputs using roleplay prompts, obfuscation, or indirect instructions \cite{jailbreak_taxonomy}.
+Prompt injection refers to adversarial inputs designed to manipulate an LLM into ignoring intended instructions or safety constraints. Early work highlighted that LLM behavior is strongly shaped by natural language instructions, which can be exploited through carefully crafted prompts \cite{prompt_injection_survey}. Greshake et al.\ observe that LLM-integrated applications can \enquote{blur the line between data and instructions} \cite{prompt_injection_survey}. Related research on \emph{jailbreaks} demonstrated that even aligned models can be induced to generate disallowed outputs using roleplay prompts, obfuscation, or indirect instructions \cite{jailbreak_taxonomy}.
 
 Several studies propose taxonomies of attack strategies, including direct override instructions, instruction hierarchy manipulation, and hidden or encoded payloads \cite{prompt_injection_taxonomy}. These findings suggest that prompt injection is not a single technique but a broad class of strategies exploiting the instruction-following behavior of LLMs. ToolShield aligns with this perspective by explicitly modeling multiple prompt injection families and evaluating generalization under attack-family distribution shifts.
 
@@ -15,7 +15,7 @@ Several studies propose taxonomies of attack strategies, including direct overri
 
 Tool-using LLM agents differ from standard chat models because the model output may trigger tool execution, such as database queries, file operations, or API calls. This creates a direct link between text generation and real-world side effects. Recent work has shown that prompt injection becomes more critical in such systems, since adversarial prompts can manipulate the model into selecting unintended tools, leaking tool schemas, or generating harmful tool arguments \cite{tool_use_security}.
 
-Modern frameworks for tool use (often referred to as \emph{function calling}) provide structured tool schemas and attempt to constrain tool invocation through typed arguments. However, the tool selection and argument generation process remains controlled by the model, which is vulnerable to adversarial instruction patterns \cite{function_calling_risks}. ToolShield addresses this risk by framing prompt injection detection as a binary classification task executed prior to tool execution.
+Modern frameworks for tool use (often referred to as \emph{function calling}) provide structured tool schemas and attempt to constrain tool invocation through typed arguments. However, the tool selection and argument generation process remains controlled by the model, which is vulnerable to adversarial instruction patterns \cite{function_calling_risks}. BIPIA reports that \enquote{malicious instructions embedded within external content can manipulate LLM outputs} \cite{function_calling_risks}. ToolShield addresses this risk by framing prompt injection detection as a binary classification task executed prior to tool execution.
 
 In addition to user-controlled inputs, tool-using agents often process untrusted content from external sources such as webpages, emails, or documents. Prior work has shown that untrusted context can carry injection payloads that are not authored by the user but still influence the agent's behavior \cite{indirect_prompt_injection}. This motivates the inclusion of context-aware detection models that incorporate both the prompt and tool context.
 
@@ -26,7 +26,7 @@ A common defense approach is to introduce safety filters that classify or modera
 
 Research has explored the use of supervised classifiers, including bag-of-words baselines, TF-IDF models, and transformer-based detectors, for harmful content detection and adversarial prompt detection \cite{harmful_prompt_detection}. In the security literature, filtering is often treated as a practical mitigation that can reduce attack success rates even when the underlying generative model remains vulnerable.
 
-ToolShield follows this design philosophy by evaluating lightweight baselines (heuristics and TF-IDF classifiers) alongside transformer-based models. The emphasis is not on making the underlying LLM robust, but on detecting malicious prompts early enough to prevent unsafe tool execution.
+ToolShield follows this design philosophy by evaluating lightweight baselines (heuristics and TF-IDF classifiers) alongside transformer-based models. The emphasis is not on making the underlying LLM resistant to all adversarial instructions, but on detecting malicious prompts early enough to prevent unsafe tool execution.
 
 \section{Context-Aware Modeling and Instruction Hierarchies}
 \label{subsec:rw_context_aware}
@@ -38,7 +38,7 @@ Context-aware defense methods attempt to incorporate such structured information
 \section{Context Window Limitations and Truncation Effects}
 \label{subsec:rw_truncation}
 
-Transformer models operate under a fixed maximum sequence length, which forces long inputs to be truncated. In practice, tool-use systems may supply extensive tool schemas, multi-step reasoning traces, or conversation histories, which can exceed the token budget. Several works have observed that model performance degrades when relevant information is truncated, particularly when truncation removes the user query or key constraints \cite{context_window_limitations}.
+Transformer models operate under a fixed maximum sequence length, which forces long inputs to be truncated. In practice, tool-use systems may supply extensive tool schemas, multi-step reasoning traces, or conversation histories, which can exceed the token budget. Lost in the Middle finds that \enquote{performance is often highest when relevant information occurs at the beginning or end of the input context} \cite{context_window_limitations}. Several works have observed that model performance degrades when relevant information is truncated, particularly when truncation removes the user query or key constraints \cite{context_window_limitations}.
 
 Input truncation is often treated as a preprocessing detail, but it can systematically bias model behavior depending on how the input is concatenated and truncated \cite{truncation_bias}. In tool-use contexts, naive truncation may discard user-level instructions while retaining tool metadata, or vice versa. This is particularly relevant for safety classification systems, where losing the malicious prompt payload can lead to false negatives.
 
@@ -49,13 +49,13 @@ ToolShield directly investigates truncation as a failure mode in prompt injectio
 
 Evaluating security defenses requires datasets containing both benign and adversarial prompts. Many prompt injection datasets are synthetic or semi-synthetic, constructed using manually designed templates or generated attacks \cite{prompt_injection_benchmarks}. Synthetic benchmarks provide reproducibility and control over attack families, but may fail to capture the diversity of real-world adversarial behavior.
 
-Recent work highlights that evaluation results can be sensitive to dataset design, including the distribution of attack templates, tool schemas, and prompt lengths \cite{benchmark_limitations}. There is also ongoing discussion about whether synthetic benchmarks overestimate performance due to limited linguistic variation or unintentional artifacts.
+Recent work highlights that evaluation results can be sensitive to dataset design, including the distribution of attack templates, tool schemas, and prompt lengths \cite{benchmark_limitations}. JailbreakBench notes that \enquote{there is no clear standard of practice regarding jailbreaking evaluation} \cite{benchmark_limitations}. There is also ongoing discussion about whether synthetic benchmarks overestimate performance due to limited linguistic variation or unintentional artifacts.
 
-ToolShield adopts a controlled synthetic dataset design in order to explicitly test generalization and truncation failure modes. In particular, the long-schema stress test aligns with concerns that standard benchmarks underestimate the impact of realistic enterprise tool schemas. However, the synthetic nature of the dataset also motivates careful discussion of external validity and future evaluation on real-world tool-use logs.
+ToolShield adopts a controlled synthetic dataset design in order to explicitly test generalization and truncation failure modes. In particular, the long-schema stress test aligns with concerns that standard benchmarks underestimate the impact of deployment-like large-organization tool schemas. However, the synthetic nature of the dataset also motivates careful discussion of external validity and future evaluation on real-world tool-use logs.
 
 \section{Positioning of ToolShield}
 \label{subsec:rw_positioning}
 
 ToolShield contributes to the intersection of prompt injection research and tool-use system security by framing injection detection as a classification problem over prompt and tool context. While prior work has explored prompt injection and safety filtering independently, ToolShield emphasizes the interaction between tool schema context and limited token budgets. The thesis investigates truncation as a structural vulnerability in context-aware defenses and evaluates a prompt-preserving truncation strategy as a mitigation.
 
-Overall, ToolShield is positioned as an engineering-oriented security study: it does not propose a fundamentally new model architecture, but instead provides empirical evidence that preprocessing choices such as truncation strategy can dominate detection performance in realistic tool-use settings.
+Overall, ToolShield is positioned as an engineering-oriented security study: it does not propose a fundamentally new model architecture, but instead provides empirical evidence that preprocessing choices such as truncation strategy can dominate detection performance in deployment-like tool-use settings.

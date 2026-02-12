@@ -26,7 +26,7 @@ A third protocol, \texttt{S\_tool\_holdout}, excludes all samples of a specific 
 \section{Baseline Model Performance on the Standard Dataset}
 \label{subsec:baseline_standard}
 
-Table~\ref{tab:main-results} summarizes performance on the standard dataset. Overall, nearly all models achieve strong discrimination, with transformer-based approaches approaching perfect classification.
+Table~\ref{tab:main-results} summarizes performance on the standard dataset. Overall, nearly all models achieve strong discrimination, with transformer-based approaches reaching near-ceiling classification under this benchmark.
 
 \subsection{\texttt{S\_random} Results}
 
@@ -38,7 +38,7 @@ On \texttt{S\_random}, multiple models achieve near-ceiling performance:
     \item \texttt{context\_transformer\_keep\_prompt} achieves ROC-AUC $=1.000$ and PR-AUC $=1.000$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.000$.
 \end{itemize}
 
-The context-aware transformer achieves perfect ranking performance on this split. This suggests that, under the synthetic data distribution, context features (tool schema, tool description, and role framing) provide sufficient information to separate benign from malicious prompts.
+The context-aware transformer achieves near-perfect ranking performance on this split. This suggests that, under the synthetic data distribution, context features (tool schema, tool description, and role framing) provide sufficient information to separate benign from malicious prompts.
 
 In contrast, the \texttt{heuristic} baseline performs substantially worse with ROC-AUC $=0.7137$, despite a relatively high PR-AUC $=0.8722$. This indicates that while heuristic rules can capture many attacks, they do not provide reliable ranking across all samples.
 
@@ -109,10 +109,10 @@ On the standard dataset, both strategies yield nearly identical predictive perfo
 
 This suggests that truncation bias is not visible in this dataset configuration due to the hard schema length constraint (\texttt{max\_schema\_length=200}), which prevents context fields from dominating the model input.
 
-\subsection{Enterprise long-schema stress test}
+\subsection{Long-schema stress test (production-scale approximation)}
 \label{subsec:longschema_stress_test}
 
-To evaluate truncation behaviour under more realistic enterprise tool schemas, we constructed a long-schema dataset variant where tool schemas were inflated to approximately 4\,000 characters, corresponding to approximately 840 schema tokens on average (Table~\ref{tab:longschema-stress}).
+To evaluate truncation behaviour under more production-scale tool schemas in this synthetic benchmark, we constructed a long-schema dataset variant where tool schemas were inflated to approximately 4\,000 characters, corresponding to approximately 840 schema tokens on average (Table~\ref{tab:longschema-stress}).
 
 This experiment directly tests the hypothesis that naive truncation can remove the prompt entirely when tool context fields are large. The primary quantitative evidence is recorded in \texttt{truncation\_stats.csv}; a concrete record-level walkthrough showing token allocation under both strategies is provided in \texttt{appendix\_truncation\_example.md}.
 
@@ -150,7 +150,7 @@ Under distribution shift with inflated schemas:
 
 The naive model performs close to random chance (ROC-AUC $\approx 0.5$). Additionally, the operating-point metrics show that it cannot achieve a usable detection threshold: FPR@TPR90 increases to $0.92$ and FPR@TPR95 increases to $0.95$. Budget thresholds become \texttt{inf} (Table~\ref{tab:budget-results}), indicating that no threshold can satisfy the budget constraint while maintaining meaningful detection.
 
-In contrast, \texttt{keep\_prompt} maintains robust performance with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$, consistent with the standard dataset results.
+In contrast, \texttt{keep\_prompt} maintains high detection performance under the evaluated conditions with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$, consistent with the standard dataset results.
 
 \paragraph{\texttt{S\_random}.}
 On \texttt{S\_random} with long schemas:
@@ -167,7 +167,7 @@ The \texttt{keep\_prompt} model remains stable, achieving FPR@TPR90 $=0.000$ and
 \paragraph{Interpretation.}
 The long-schema stress test demonstrates that naive truncation introduces a systematic failure mode: the prompt, which contains the primary signal for injection detection, is removed entirely due to right-truncation after concatenation. The classifier is then forced to make predictions from tool metadata alone, which is insufficient for separating benign and malicious samples.
 
-The \texttt{keep\_prompt} strategy avoids this failure by enforcing a minimum prompt token budget, ensuring that detection remains robust even when tool schemas dominate the context.
+The \texttt{keep\_prompt} strategy avoids this failure by enforcing a minimum prompt token budget, ensuring that detection remains effective under the evaluated long-schema conditions even when tool schemas dominate the context.
 
 This result is not a minor performance difference but a qualitative shift: the same model architecture changes from near-perfect detection to near-random guessing depending only on truncation strategy.
 
@@ -183,7 +183,7 @@ Split integrity for both protocols is documented in \texttt{split\_hygiene.md}, 
     \item On the standard dataset, transformer-based models achieve near-ceiling performance, with context-aware transformers reaching ROC-AUC $\approx 1.0$ on \texttt{S\_random} and $\approx 0.999$ on \texttt{S\_attack\_holdout} (Table~\ref{tab:main-results}).
     \item Heuristic baselines provide limited discrimination (ROC-AUC $\approx 0.714$), confirming the need for learned models.
     \item Under standard schema constraints, \texttt{naive} and \texttt{keep\_prompt} truncation produce nearly identical results, since schemas are too small to trigger truncation bias.
-    \item Under enterprise-length schemas (${\sim}\,4\,000$ characters, ${\sim}\,840$ tokens), \texttt{naive} truncation causes $100\%$ prompt truncation and prompt retention ratio collapses to $0.0$ (Table~\ref{tab:longschema-stress}, Figure~\ref{fig:prompt-retention-quartiles}).
+    \item Under production-scale schemas in the stress test (${\sim}\,4\,000$ characters, ${\sim}\,840$ tokens), \texttt{naive} truncation causes $100\%$ prompt truncation and prompt retention ratio collapses to $0.0$ (Table~\ref{tab:longschema-stress}, Figure~\ref{fig:prompt-retention-quartiles}).
     \item In the same stress setting, \texttt{naive} truncation degrades classification to near-random performance (ROC-AUC $=0.455$--$0.479$), while \texttt{keep\_prompt} maintains strong performance (ROC-AUC $\approx 0.998$).
-    \item Prompt-preserving truncation is therefore a necessary design choice for robust prompt injection detection in realistic tool-use environments.
+    \item Within this synthetic benchmark, prompt-preserving truncation is therefore a necessary design choice for effective prompt injection detection under long-schema conditions.
 \end{itemize}
