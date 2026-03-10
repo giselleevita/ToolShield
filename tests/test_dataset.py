@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from toolshield.data.generate_dataset import generate_dataset
-from toolshield.data.schema import DatasetRecord
 from toolshield.data.tools import TOOL_NAMES
 
 
@@ -19,7 +16,7 @@ class TestDatasetGeneration:
 
         assert len(records1) == len(records2)
 
-        for r1, r2 in zip(records1, records2):
+        for r1, r2 in zip(records1, records2, strict=True):
             assert r1.id == r2.id
             assert r1.prompt == r2.prompt
             assert r1.label_binary == r2.label_binary

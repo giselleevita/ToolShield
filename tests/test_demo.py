@@ -10,12 +10,8 @@ These tests verify:
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 import pytest
-
 from toolshield.demo.app import (
     AuditEntry,
     GuardRequest,
@@ -28,7 +24,7 @@ from toolshield.demo.app import (
 
 class TestHashPrompt:
     """Tests for prompt hashing."""
-    
+
     def test_hash_returns_hex_string(self) -> None:
         """Hash should return a hex string."""
         result = _hash_prompt("test prompt")
@@ -41,12 +37,12 @@ class TestHashPrompt:
         hash1 = _hash_prompt(prompt)
         hash2 = _hash_prompt(prompt)
         assert hash1 == hash2
-    
+
     def test_hash_is_fixed_length(self) -> None:
         """Hash should be 32 characters."""
         assert len(_hash_prompt("short")) == 32
         assert len(_hash_prompt("a" * 1000)) == 32
-    
+
     def test_different_prompts_different_hashes(self) -> None:
         """Different prompts should produce different hashes."""
         hash1 = _hash_prompt("prompt one")
