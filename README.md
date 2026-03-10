@@ -183,6 +183,25 @@ All 5 verification checks passed.
 All artifacts are in `data/reports/experiments_longschema/`. The raw verification
 log is saved at `data/reports/experiments_longschema/verification_output.txt`.
 
+## Thesis & artifacts
+
+- Full bachelor thesis PDF: `ToolShield_BScThesis_Evita_2026.pdf`
+- Executive summary: `EXEC_SUMMARY.md`
+- Additional submission artifacts and reports: see `THESIS_ARTIFACTS.md` and the `thesis/` directory.
+
+These artifacts document the full experimental setup, results, and academic framing behind ToolShield.
+
+## Security scope & limitations
+
+ToolShield is a **research-grade prototype**, not a production security appliance:
+
+- Focuses on **prompt injection detection for tool-using LLM agents** under controlled experimental conditions.
+- Assumes that the underlying **tool backends and infrastructure are trusted** and not compromised.
+- Does **not** attempt to defend against supply-chain attacks, compromised tool APIs, or model-level backdoors.
+- Evaluation targets specific attack families (AF1–AF4) and synthetic enterprise schemas; real-world attack coverage will differ.
+
+If you integrate ToolShield into a larger system, treat it as **one detection signal** in a broader, defense-in-depth security strategy and validate it against your own threat models and datasets.
+
 ## License
 
 MIT License - See LICENSE file for details.
