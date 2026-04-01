@@ -1,0 +1,28 @@
+30-Day Pilot Agreement Template
+
+Scope
+- Product: AgentGuard / ToolShield
+- Pilot Duration: 30 calendar days
+- Protected Workflows: __________________
+- Success Criteria:
+  1) Guard endpoint integrated into target tool chain
+  2) Attack detection coverage validated on customer scenarios
+  3) Decision logs accepted by security governance team
+
+Commercial Terms
+- Pilot fee: __________________
+- Conversion credit to annual contract: Yes/No
+
+Security and Data Handling
+- Tenant isolation for pilot artifacts
+- Signed decision records enabled
+- Data deletion SLA after pilot close: ______ days
+
+Governance
+- Weekly checkpoint cadence
+- Customer owner: __________________
+- Vendor owner: __________________
+
+Signatures
+Customer: __________________ Date: ______
+Vendor: ____________________ Date: ______

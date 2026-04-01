@@ -143,6 +143,41 @@ class TestGuardResponse:
         )
         assert response.decision == "BLOCK"
 
+    def test_response_accepts_signed_decision(self) -> None:
+        """Guard responses should allow optional signed decision metadata."""
+        response = GuardResponse(
+            decision="ALLOW",
+            score=0.2,
+            threshold=0.5,
+            audit_id="abc123",
+            explanation="Prompt appears benign",
+            latency_ms=10.5,
+            signed_decision={
+                "audit_id": "abc123",
+                "signed_at": "2026-03-30T00:00:00Z",
+                "payload_hash": "abc",
+                "signature": "sig",
+                "verification": {"algorithm": "hmac-sha256", "key_id": "env:toolshield-signing-secret"},
+                "policy_artifact": {
+                    "model_path": "outputs/tfidf_lr/",
+                    "model_config_hash": "hash",
+                    "thresholds": {"0.03": 0.5},
+                    "selected_budget": 0.03,
+                },
+                "provenance": {
+                    "decision": "ALLOW",
+                    "score": 0.2,
+                    "threshold": 0.5,
+                    "explanation": "Prompt appears benign",
+                    "prompt_hash": "hash",
+                    "tool_name": "exportReport",
+                    "role_sequence": ["system", "user"],
+                },
+            },
+        )
+        assert response.signed_decision is not None
+        assert response.signed_decision.verification.algorithm == "hmac-sha256"
+
 
 class TestAuditEntry:
     """Tests for AuditEntry model."""

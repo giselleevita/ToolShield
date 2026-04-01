@@ -1,4 +1,4 @@
-.PHONY: install install-dev generate split-all split-random split-attack-holdout split-tool-holdout \
+.PHONY: install install-dev lock lock-check security-audit bandit security-scan generate split-all split-random split-attack-holdout split-tool-holdout \
         train-all train-heuristic train-heuristic-score train-tfidf train-transformer train-context \
         eval-all eval-protocol eval-full test lint typecheck clean help \
         data splits train eval demo verify aggregate aggregate-strict \
@@ -28,6 +28,23 @@ install: ## Install package in production mode
 
 install-dev: ## Install package with development dependencies
 	$(PIP) install -e ".[dev]"
+
+lock: ## Compile a reproducible development lock file from pyproject.toml
+	$(PYTHON) -m piptools compile pyproject.toml --extra dev --output-file requirements-dev.lock
+
+lock-check: ## Rebuild the lock file and fail if it changed
+	$(MAKE) lock
+	git diff --exit-code requirements-dev.lock
+
+security-audit: ## Audit locked Python dependencies for known vulnerabilities
+	$(PYTHON) -m pip_audit -r requirements-dev.lock
+
+bandit: ## Run Bandit over source and scripts
+	bandit -q -r src/toolshield scripts -x tests
+
+security-scan: lock ## Run dependency and static security scans
+	$(MAKE) security-audit
+	$(MAKE) bandit
 
 #------------------------------------------------------------------------------
 # Data Generation

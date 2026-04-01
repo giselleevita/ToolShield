@@ -1,0 +1,17 @@
+Headline: Guardrails for Tool-Using LLM Agents
+Subheadline: Detect prompt injection before tool execution with auditable, policy-aligned decisions.
+
+Core Features
+- Real-time guard API with ALLOW/BLOCK outcomes
+- FPR-budget thresholding for operational control
+- Signed decision records and audit log pipeline
+- Research-backed evaluation harness
+
+Pricing
+- Dev Team: USD 1,200/month
+- Platform Team: USD 4,500/month
+- Enterprise: Custom with private deployment and support
+
+CTA
+- Primary: Book technical walkthrough
+- Secondary: Run 30-day guarded-agent pilot

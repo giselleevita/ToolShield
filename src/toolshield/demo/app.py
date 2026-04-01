@@ -21,8 +21,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
+
+from toolshield.guard.signing import GuardSigner, SignedDecisionRecord
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -84,6 +88,7 @@ class GuardResponse(BaseModel):
     audit_id: str
     explanation: str
     latency_ms: float
+    signed_decision: SignedDecisionRecord | None = None
 
 
 class AuditEntry(BaseModel):
@@ -107,6 +112,7 @@ class AuditEntry(BaseModel):
 # Global model cache
 _model_cache: dict[str, Any] = {}
 _thresholds: dict[float, float] = DEFAULT_THRESHOLDS.copy()
+_signer = GuardSigner.from_environment()
 
 
 def _hash_prompt(prompt: str) -> str:
@@ -224,29 +230,31 @@ def _generate_explanation(score: float, threshold: float, decision: str) -> str:
             return "Below threshold: prompt allowed but monitor recommended"
 
 
-# Initialize FastAPI app
-app = FastAPI(
-    title="ToolShield Guard API",
-    description="Prompt injection detection for tool-using LLM agents",
-    version="0.1.0",
-)
-
-
-@app.on_event("startup")
-async def startup_event() -> None:
+@asynccontextmanager
+async def _lifespan(application: FastAPI):  # noqa: ARG001
     """Pre-load model on startup and warmup if applicable."""
     try:
         model = _load_model(DEFAULT_MODEL_PATH)
         logger.info(f"Model loaded: {DEFAULT_MODEL_PATH}")
-        
+
         # Warmup transformer models for fast inference
-        if hasattr(model, 'warmup') and callable(getattr(model, 'warmup')):
+        if hasattr(model, "warmup") and callable(getattr(model, "warmup")):
             logger.info("Warming up transformer model...")
             model.warmup(n_samples=20)
             logger.info("Model warmup complete")
     except Exception as e:
         logger.warning(f"Could not pre-load model: {e}")
         logger.warning("Model will be loaded on first request")
+    yield
+
+
+# Initialize FastAPI app
+app = FastAPI(
+    title="ToolShield Guard API",
+    description="Prompt injection detection for tool-using LLM agents",
+    version="0.1.0",
+    lifespan=_lifespan,
+)
 
 
 @app.get("/")
@@ -351,6 +359,20 @@ async def guard(request: GuardRequest) -> GuardResponse:
         _write_audit_entry(audit_entry, DEFAULT_AUDIT_LOG)
     except Exception as e:
         logger.warning(f"Failed to write audit log: {e}")
+
+    signed_decision = _signer.sign(
+        audit_id=audit_id,
+        prompt_hash=audit_entry.prompt_hash,
+        decision=decision,
+        score=round(score, 4),
+        threshold=round(threshold, 4),
+        explanation=explanation,
+        fpr_budget=request.fpr_budget,
+        tool_name=request.tool_name,
+        role_sequence=request.role_sequence,
+        model_path=DEFAULT_MODEL_PATH,
+        thresholds=_thresholds,
+    )
     
     return GuardResponse(
         decision=decision,
@@ -359,6 +381,7 @@ async def guard(request: GuardRequest) -> GuardResponse:
         audit_id=audit_id,
         explanation=explanation,
         latency_ms=round(latency_ms, 2),
+        signed_decision=signed_decision,
     )
 
 
@@ -392,5 +415,6 @@ async def configure(
     return {
         "thresholds": _thresholds,
         "model_path": DEFAULT_MODEL_PATH,
+        "signing_enabled": _signer.enabled,
         "cached_models": list(_model_cache.keys()),
     }

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Tool(BaseModel):
@@ -27,10 +27,7 @@ class Tool(BaseModel):
     description: str = Field(..., description="Natural language description")
     schema_: dict[str, Any] = Field(..., alias="schema", description="JSON schema for parameters")
 
-    class Config:
-        """Pydantic configuration."""
-
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 
 # Tool: getCustomerRecord

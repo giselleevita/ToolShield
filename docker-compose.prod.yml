@@ -1,0 +1,14 @@
+services:
+  guard-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      TOOLSHIELD_MODEL_PATH: ${TOOLSHIELD_MODEL_PATH:-outputs/tfidf_lr/}
+      TOOLSHIELD_AUDIT_LOG: ${TOOLSHIELD_AUDIT_LOG:-data/audit/guard_audit.jsonl}
+      TOOLSHIELD_SIGNING_SECRET: ${TOOLSHIELD_SIGNING_SECRET:-change-me-in-prod}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    ports:
+      - "8000:8000"

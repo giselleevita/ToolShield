@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AttackFamily(str, Enum):
@@ -78,10 +78,8 @@ class DatasetRecord(BaseModel):
     variant_id: str = Field(..., description="Variant within template")
     seed: int = Field(..., description="Generation seed")
 
-    class Config:
-        """Pydantic model configuration."""
-
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "rec_001_benign_getCustomerRecord",
                 "language": "en",
@@ -102,6 +100,7 @@ class DatasetRecord(BaseModel):
                 "seed": 1337,
             }
         }
+    )
 
     def is_attack(self) -> bool:
         """Check if this record represents an attack."""
