@@ -1,6 +1,6 @@
 # ToolShield: Prompt Injection Detection for Enterprise LLM Agents
 
-**Executive Summary for Netcompany**
+**Executive Summary**
 
 ---
 
@@ -26,7 +26,7 @@ When attack patterns seen during training also appear in testing, models appear 
 |----------------|---------|-------------|
 | S_random | Baseline (industry standard) | FPR@TPR90 = 0% |
 | S_attack_holdout | Novel attack types | FPR@TPR90 = 37% |
-| S_tool_holdout | Novel tools | FPR@TPR90 = TBD |
+| S_tool_holdout | Novel tools | FPR@TPR90 = 41% |
 
 **The 37% degradation reveals the true generalization gap** that enterprises must plan for.
 
@@ -113,7 +113,7 @@ response = requests.post(
 
 ## Contact
 
-This research was conducted as part of a Bachelor's thesis in collaboration with Netcompany.
+This research was conducted as part of a Bachelor's thesis.
 
 For questions about enterprise deployment or custom evaluation protocols, contact the thesis author.
 
