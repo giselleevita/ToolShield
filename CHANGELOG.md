@@ -1,0 +1,22 @@
+# Changelog
+
+All notable changes to ToolShield are documented here.
+
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+
+---
+
+## [1.0.0] — 2026-05-01
+
+### Added
+- Synthetic dataset generator for prompt injection in tool-using LLM agents
+- Four attack families: AF1 (Instruction Override), AF2 (Data Exfiltration), AF3 (Tool Hijacking), AF4 (Indirect Injection)
+- Three evaluation protocols: `S_random`, `S_attack_holdout`, `S_tool_holdout`
+- Baseline models: rule-based heuristics, TF-IDF + LR, transformer classifier
+- Operational metrics: FPR@TPR(0.90), FPR@TPR(0.95), ASR Reduction
+- Long-schema stress test: naive truncation vs. prompt-preserving truncation ablation
+- Key result: `keep_prompt` strategy achieves 0.998 ROC-AUC vs. 0.455 for naive truncation on `S_attack_holdout`
+- Split hygiene verification: no template leakage across splits
+- CLI (`toolshield generate`, `split`, `train`, `eval`)
+- Full thesis PDF and supplementary artifacts in `thesis/`
+- Reproducible seeds embedded in config files and output manifests
