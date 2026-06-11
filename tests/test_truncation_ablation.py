@@ -14,7 +14,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-
 # ── Paths ────────────────────────────────────────────────────────────────────
 
 PROJECT_ROOT = Path(__file__).parent.parent
@@ -120,10 +119,16 @@ class TestCLIAliases:
         return None
 
     def test_context_transformer_naive_accepted(self):
-        assert self._get_cli_model_branch("context_transformer_naive") == "ContextTransformerClassifier"
+        assert (
+            self._get_cli_model_branch("context_transformer_naive")
+            == "ContextTransformerClassifier"
+        )
 
     def test_context_transformer_keep_prompt_accepted(self):
-        assert self._get_cli_model_branch("context_transformer_keep_prompt") == "ContextTransformerClassifier"
+        assert (
+            self._get_cli_model_branch("context_transformer_keep_prompt")
+            == "ContextTransformerClassifier"
+        )
 
     def test_context_transformer_still_accepted(self):
         assert self._get_cli_model_branch("context_transformer") == "ContextTransformerClassifier"
@@ -256,7 +261,10 @@ class TestLongSchemaDatasetConfig:
         assert base_config["n_samples"] == longschema_config["n_samples"]
 
     def test_attack_families_identical(self, base_config, longschema_config):
-        assert base_config["properties"]["attack_families"] == longschema_config["properties"]["attack_families"]
+        assert (
+            base_config["properties"]["attack_families"]
+            == longschema_config["properties"]["attack_families"]
+        )
 
     def test_tools_identical(self, base_config, longschema_config):
         assert base_config["properties"]["tools"] == longschema_config["properties"]["tools"]
@@ -534,27 +542,37 @@ class TestMetricsResultWarnings:
     def test_warnings_field_exists(self):
         """MetricsResult dataclass should have a warnings field."""
         import sys
-        sys.path.insert(0, str(PROJECT_ROOT / "src"))
-        from toolshield.evaluation.metrics import MetricsResult
 
+        sys.path.insert(0, str(PROJECT_ROOT / "src"))
         # Verify field exists with default empty list
         import dataclasses
+
+        from toolshield.evaluation.metrics import MetricsResult
+
         fields = {f.name for f in dataclasses.fields(MetricsResult)}
         assert "warnings" in fields
 
     def test_warnings_in_to_dict(self):
         """Warnings should appear in to_dict() when non-empty."""
         import sys
+
         sys.path.insert(0, str(PROJECT_ROOT / "src"))
         from toolshield.evaluation.metrics import MetricsResult
 
         result = MetricsResult(
-            roc_auc=0.5, pr_auc=0.5,
-            fpr_at_tpr_90=0.5, fpr_at_tpr_95=0.5,
-            threshold_at_tpr_90=0.5, threshold_at_tpr_95=0.5,
-            asr_before=1.0, asr_after_90=0.5, asr_after_95=0.5,
-            asr_reduction_90=0.5, asr_reduction_95=0.5,
-            blocked_benign_rate_90=0.5, blocked_benign_rate_95=0.5,
+            roc_auc=0.5,
+            pr_auc=0.5,
+            fpr_at_tpr_90=0.5,
+            fpr_at_tpr_95=0.5,
+            threshold_at_tpr_90=0.5,
+            threshold_at_tpr_95=0.5,
+            asr_before=1.0,
+            asr_after_90=0.5,
+            asr_after_95=0.5,
+            asr_reduction_90=0.5,
+            asr_reduction_95=0.5,
+            blocked_benign_rate_90=0.5,
+            blocked_benign_rate_95=0.5,
             warnings=["test warning"],
         )
         d = result.to_dict()
@@ -564,16 +582,24 @@ class TestMetricsResultWarnings:
     def test_no_warnings_key_when_empty(self):
         """Empty warnings should not appear in to_dict()."""
         import sys
+
         sys.path.insert(0, str(PROJECT_ROOT / "src"))
         from toolshield.evaluation.metrics import MetricsResult
 
         result = MetricsResult(
-            roc_auc=0.5, pr_auc=0.5,
-            fpr_at_tpr_90=0.5, fpr_at_tpr_95=0.5,
-            threshold_at_tpr_90=0.5, threshold_at_tpr_95=0.5,
-            asr_before=1.0, asr_after_90=0.5, asr_after_95=0.5,
-            asr_reduction_90=0.5, asr_reduction_95=0.5,
-            blocked_benign_rate_90=0.5, blocked_benign_rate_95=0.5,
+            roc_auc=0.5,
+            pr_auc=0.5,
+            fpr_at_tpr_90=0.5,
+            fpr_at_tpr_95=0.5,
+            threshold_at_tpr_90=0.5,
+            threshold_at_tpr_95=0.5,
+            asr_before=1.0,
+            asr_after_90=0.5,
+            asr_after_95=0.5,
+            asr_reduction_90=0.5,
+            asr_reduction_95=0.5,
+            blocked_benign_rate_90=0.5,
+            blocked_benign_rate_95=0.5,
         )
         d = result.to_dict()
         assert "warnings" not in d

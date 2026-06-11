@@ -95,10 +95,12 @@ class TfidfLRClassifier(BaseClassifier):
         y_train = self.extract_labels(train_records)
 
         # Create and fit pipeline
-        self.pipeline = Pipeline([
-            ("vectorizer", self.vectorizer),
-            ("classifier", self.classifier),
-        ])
+        self.pipeline = Pipeline(
+            [
+                ("vectorizer", self.vectorizer),
+                ("classifier", self.classifier),
+            ]
+        )
 
         self.pipeline.fit(X_train, y_train)
         self._is_trained = True
@@ -123,13 +125,15 @@ class TfidfLRClassifier(BaseClassifier):
             val_scores = self.pipeline.predict_proba(X_val)[:, 1]
             val_metrics = compute_all_metrics(y_val, val_scores, val_goals)
 
-            result.update({
-                "val_samples": len(val_records),
-                "val_roc_auc": val_metrics.roc_auc,
-                "val_pr_auc": val_metrics.pr_auc,
-                "val_fpr_at_tpr_90": val_metrics.fpr_at_tpr_90,
-                "val_fpr_at_tpr_95": val_metrics.fpr_at_tpr_95,
-            })
+            result.update(
+                {
+                    "val_samples": len(val_records),
+                    "val_roc_auc": val_metrics.roc_auc,
+                    "val_pr_auc": val_metrics.pr_auc,
+                    "val_fpr_at_tpr_90": val_metrics.fpr_at_tpr_90,
+                    "val_fpr_at_tpr_95": val_metrics.fpr_at_tpr_95,
+                }
+            )
 
             print("\nValidation Metrics:")
             print_metrics(val_metrics)
@@ -190,7 +194,7 @@ class TfidfLRClassifier(BaseClassifier):
             pickle.dump(self.pipeline, f)
 
     @classmethod
-    def load(cls, path: str | Path) -> "TfidfLRClassifier":
+    def load(cls, path: str | Path) -> TfidfLRClassifier:
         """Load a model from disk.
 
         Args:
@@ -213,7 +217,8 @@ class TfidfLRClassifier(BaseClassifier):
 
         # Load pipeline
         with (path / "pipeline.pkl").open("rb") as f:
-            instance.pipeline = pickle.load(f)
+            # Only load artifacts produced by a trusted local training run.
+            instance.pipeline = pickle.load(f)  # nosec B301
 
         instance._is_trained = True
         return instance
@@ -243,17 +248,11 @@ class TfidfLRClassifier(BaseClassifier):
 
         # Top features for benign (most negative coefficients)
         benign_indices = sorted_indices[:top_k]
-        benign_features = [
-            (feature_names[i], float(coefficients[i]))
-            for i in benign_indices
-        ]
+        benign_features = [(feature_names[i], float(coefficients[i])) for i in benign_indices]
 
         # Top features for attack (most positive coefficients)
         attack_indices = sorted_indices[-top_k:][::-1]
-        attack_features = [
-            (feature_names[i], float(coefficients[i]))
-            for i in attack_indices
-        ]
+        attack_features = [(feature_names[i], float(coefficients[i])) for i in attack_indices]
 
         return {
             "benign": benign_features,

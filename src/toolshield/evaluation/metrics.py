@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Protocol
+from typing import Any, Protocol
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -31,7 +31,7 @@ from toolshield.data.schema import UNSAFE_GOALS, DatasetRecord
 
 class PredictorProtocol(Protocol):
     """Protocol for models that can predict scores."""
-    
+
     def predict_scores(self, records: list[DatasetRecord]) -> list[float]:
         """Predict scores for a batch of records."""
         ...
@@ -40,7 +40,7 @@ class PredictorProtocol(Protocol):
 @dataclass
 class LatencyResult:
     """Container for latency measurement results.
-    
+
     Attributes:
         p50_ms: 50th percentile total latency in milliseconds.
         p95_ms: 95th percentile total latency in milliseconds.
@@ -53,7 +53,7 @@ class LatencyResult:
         tokenize_p50_ms: 50th percentile tokenization latency (transformers only).
         infer_p50_ms: 50th percentile inference latency (transformers only).
     """
-    
+
     p50_ms: float
     p95_ms: float
     mean_ms: float
@@ -66,7 +66,7 @@ class LatencyResult:
     tokenize_p95_ms: float | None = None
     infer_p50_ms: float | None = None
     infer_p95_ms: float | None = None
-    
+
     def to_dict(self) -> dict[str, float]:
         """Convert to dictionary."""
         result = {
@@ -380,19 +380,19 @@ def measure_latency(
     mode: str = "warm",
 ) -> LatencyResult:
     """Measure inference latency for a model.
-    
+
     Runs the model multiple times on the same data to get stable
     latency measurements. Reports P50 and P95 percentiles.
-    
+
     For transformer models, also reports separate tokenization and inference times.
-    
+
     Args:
         model: Model with predict_scores method.
         records: Records to use for inference.
         n_runs: Number of timing runs to perform.
         warmup_runs: Number of warmup runs before timing (only in warm mode).
         mode: 'warm' (default, includes warmup) or 'cold' (no warmup, includes loading).
-        
+
     Returns:
         LatencyResult with P50, P95, and other statistics.
     """
@@ -407,11 +407,13 @@ def measure_latency(
             n_runs=0,
             mode=mode,
         )
-    
+
     # Check if model has warmup method (transformers)
-    has_warmup = hasattr(model, 'warmup') and callable(getattr(model, 'warmup'))
-    has_timed_predict = hasattr(model, 'predict_scores_timed') and callable(getattr(model, 'predict_scores_timed'))
-    
+    has_warmup = hasattr(model, "warmup") and callable(model.warmup)
+    has_timed_predict = hasattr(model, "predict_scores_timed") and callable(
+        model.predict_scores_timed
+    )
+
     # Warmup phase (only in warm mode)
     if mode == "warm":
         if has_warmup:
@@ -420,13 +422,13 @@ def measure_latency(
         else:
             # Fallback: run inference for warmup
             for _ in range(min(warmup_runs, 5)):
-                _ = model.predict_scores(records[:min(10, len(records))])
-    
+                _ = model.predict_scores(records[: min(10, len(records))])
+
     # Timed runs
     times_ms: list[float] = []
     tokenize_times_ms: list[float] = []
     infer_times_ms: list[float] = []
-    
+
     for _ in range(n_runs):
         if has_timed_predict:
             # Use timed predict for separate tokenize/infer timing
@@ -442,9 +444,9 @@ def measure_latency(
             _ = model.predict_scores(records)
             elapsed_ms = (time.perf_counter() - start) * 1000
             times_ms.append(elapsed_ms)
-    
+
     times_array = np.array(times_ms)
-    
+
     # Build result
     result = LatencyResult(
         p50_ms=float(np.percentile(times_array, 50)),
@@ -456,7 +458,7 @@ def measure_latency(
         n_runs=n_runs,
         mode=mode,
     )
-    
+
     # Add tokenize/infer breakdown if available
     if tokenize_times_ms:
         tokenize_array = np.array(tokenize_times_ms)
@@ -465,7 +467,7 @@ def measure_latency(
         result.tokenize_p95_ms = float(np.percentile(tokenize_array, 95))
         result.infer_p50_ms = float(np.percentile(infer_array, 50))
         result.infer_p95_ms = float(np.percentile(infer_array, 95))
-    
+
     return result
 
 
@@ -475,15 +477,15 @@ def measure_per_sample_latency(
     n_samples: int = 100,
 ) -> LatencyResult:
     """Measure per-sample inference latency.
-    
+
     Times individual predictions to get per-sample latency.
     Useful for understanding single-request performance.
-    
+
     Args:
         model: Model with predict_scores method.
         records: Records to sample from.
         n_samples: Number of samples to time.
-        
+
     Returns:
         LatencyResult with per-sample P50, P95, and other statistics.
     """
@@ -497,23 +499,21 @@ def measure_per_sample_latency(
             n_samples=0,
             n_runs=0,
         )
-    
+
     # Sample records if we have more than n_samples
     import random
-    if len(records) > n_samples:
-        sampled_records = random.sample(records, n_samples)
-    else:
-        sampled_records = records
-    
+
+    sampled_records = random.sample(records, n_samples) if len(records) > n_samples else records
+
     times_ms: list[float] = []
     for record in sampled_records:
         start = time.perf_counter()
         _ = model.predict_scores([record])
         elapsed_ms = (time.perf_counter() - start) * 1000
         times_ms.append(elapsed_ms)
-    
+
     times_array = np.array(times_ms)
-    
+
     return LatencyResult(
         p50_ms=float(np.percentile(times_array, 50)),
         p95_ms=float(np.percentile(times_array, 95)),
@@ -558,10 +558,7 @@ def compute_all_metrics(
     # Default attack goals if not provided
     if attack_goals is None:
         # Assume all attacks have unsafe goals
-        attack_goals = [
-            "policy_bypass" if y == 1 else None
-            for y in y_true
-        ]
+        attack_goals = ["policy_bypass" if y == 1 else None for y in y_true]
 
     # Standard metrics
     roc_auc = compute_roc_auc(y_true, y_scores)
@@ -628,8 +625,12 @@ def print_metrics(metrics: MetricsResult) -> None:
     print(f"  PR-AUC:          {metrics.pr_auc:.4f}")
 
     print("\nOperational Metrics (FPR @ TPR):")
-    print(f"  FPR @ TPR=0.90:  {metrics.fpr_at_tpr_90:.4f}  (threshold={metrics.threshold_at_tpr_90:.4f})")
-    print(f"  FPR @ TPR=0.95:  {metrics.fpr_at_tpr_95:.4f}  (threshold={metrics.threshold_at_tpr_95:.4f})")
+    print(
+        f"  FPR @ TPR=0.90:  {metrics.fpr_at_tpr_90:.4f}  (threshold={metrics.threshold_at_tpr_90:.4f})"
+    )
+    print(
+        f"  FPR @ TPR=0.95:  {metrics.fpr_at_tpr_95:.4f}  (threshold={metrics.threshold_at_tpr_95:.4f})"
+    )
 
     print("\nASR Metrics @ TPR=0.90:")
     print(f"  ASR (before):    {metrics.asr_before:.4f}")

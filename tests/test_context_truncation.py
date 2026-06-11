@@ -21,7 +21,6 @@ from toolshield.models.context_transformer import (
     TruncationStats,
 )
 
-
 # ── Fixtures ─────────────────────────────────────────────────────────────────
 
 TOKENIZER_NAME = "distilroberta-base"
@@ -89,6 +88,7 @@ def _make_record_with_long_schema(
 
 # ── PromptPreservingDataset unit tests ───────────────────────────────────────
 
+
 class TestPromptPreservingDataset:
     """Tests for the PromptPreservingDataset tokenization."""
 
@@ -132,17 +132,18 @@ class TestPromptPreservingDataset:
 
         # Should contain the </s></s> pair separator somewhere
         eos_id = tokenizer.eos_token_id
-        has_double_eos = any(
-            ids[i] == eos_id and ids[i + 1] == eos_id
-            for i in range(len(ids) - 1)
-        )
+        has_double_eos = any(ids[i] == eos_id and ids[i + 1] == eos_id for i in range(len(ids) - 1))
         assert has_double_eos, "Missing </s></s> separator between context and prompt"
 
     def test_no_label_when_none(self, tokenizer):
         """No 'labels' key when labels=None (inference mode)."""
         ds = PromptPreservingDataset(
-            contexts=["ctx"], prompts=["pmt"], labels=None,
-            tokenizer=tokenizer, max_length=32, prompt_min_tokens=8,
+            contexts=["ctx"],
+            prompts=["pmt"],
+            labels=None,
+            tokenizer=tokenizer,
+            max_length=32,
+            prompt_min_tokens=8,
         )
         item = ds[0]
         assert "labels" not in item
@@ -152,8 +153,12 @@ class TestPromptPreservingDataset:
         ctx = "ROLE: user"
         pmt = "PROMPT: hello"
         ds = PromptPreservingDataset(
-            contexts=[ctx], prompts=[pmt], labels=[1],
-            tokenizer=tokenizer, max_length=128, prompt_min_tokens=32,
+            contexts=[ctx],
+            prompts=[pmt],
+            labels=[1],
+            tokenizer=tokenizer,
+            max_length=128,
+            prompt_min_tokens=32,
         )
         item = ds[0]
         # All non-pad tokens should include both context and prompt content
@@ -173,14 +178,16 @@ class TestPromptPreservingDataset:
         content_budget = max_len - 4  # 60
 
         ds = PromptPreservingDataset(
-            contexts=[long_ctx], prompts=[short_pmt], labels=[1],
-            tokenizer=tokenizer, max_length=max_len, prompt_min_tokens=prompt_min,
+            contexts=[long_ctx],
+            prompts=[short_pmt],
+            labels=[1],
+            tokenizer=tokenizer,
+            max_length=max_len,
+            prompt_min_tokens=prompt_min,
         )
 
         # Use _allocate_and_build to inspect token counts
-        _, _, p_total, p_retained, c_total, c_retained = ds._allocate_and_build(
-            long_ctx, short_pmt
-        )
+        _, _, p_total, p_retained, c_total, c_retained = ds._allocate_and_build(long_ctx, short_pmt)
 
         # Prompt is short, should be fully retained (it's < prompt_min)
         assert p_retained == p_total
@@ -202,8 +209,12 @@ class TestPromptPreservingDataset:
         content_budget = max_len - 4  # 60
 
         ds = PromptPreservingDataset(
-            contexts=[short_ctx], prompts=[long_prompt], labels=[1],
-            tokenizer=tokenizer, max_length=max_len, prompt_min_tokens=prompt_min,
+            contexts=[short_ctx],
+            prompts=[long_prompt],
+            labels=[1],
+            tokenizer=tokenizer,
+            max_length=max_len,
+            prompt_min_tokens=prompt_min,
             prompt_side="tail",
         )
 
@@ -233,7 +244,7 @@ class TestPromptPreservingDataset:
         retained_ids = ids[prompt_start:prompt_end]
 
         # These should match the TAIL of the full prompt encoding
-        assert retained_ids == full_prompt_ids[-len(retained_ids):]
+        assert retained_ids == full_prompt_ids[-len(retained_ids) :]
 
     def test_deterministic(self, tokenizer):
         """Same input always produces identical output."""
@@ -241,8 +252,12 @@ class TestPromptPreservingDataset:
         pmt = "PROMPT: test determinism"
 
         ds = PromptPreservingDataset(
-            contexts=[ctx], prompts=[pmt], labels=[0],
-            tokenizer=tokenizer, max_length=64, prompt_min_tokens=16,
+            contexts=[ctx],
+            prompts=[pmt],
+            labels=[0],
+            tokenizer=tokenizer,
+            max_length=64,
+            prompt_min_tokens=16,
         )
 
         item1 = ds[0]
@@ -252,6 +267,7 @@ class TestPromptPreservingDataset:
 
 
 # ── ContextTransformerClassifier strategy tests ──────────────────────────────
+
 
 class TestContextTransformerTruncation:
     """Tests for truncation strategy wiring in the classifier."""
@@ -268,11 +284,13 @@ class TestContextTransformerTruncation:
 
     def test_keep_prompt_strategy_from_config(self):
         """Config properly sets keep_prompt strategy."""
-        clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "keep_prompt",
-            "prompt_min_tokens": 96,
-            "prompt_side": "tail",
-        })
+        clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "keep_prompt",
+                "prompt_min_tokens": 96,
+                "prompt_side": "tail",
+            }
+        )
         assert clf.truncate_strategy == "keep_prompt"
         assert clf.prompt_min_tokens == 96
         assert clf.prompt_side == "tail"
@@ -315,23 +333,27 @@ class TestNaiveVsKeepPrompt:
         max_length = 128  # tight budget to force truncation
 
         # Naive classifier (bypass char-level schema truncation)
-        naive_clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "naive",
-            "max_length": max_length,
-            "max_schema_length": 5000,
-            "model_name": TOKENIZER_NAME,
-        })
+        naive_clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "naive",
+                "max_length": max_length,
+                "max_schema_length": 5000,
+                "model_name": TOKENIZER_NAME,
+            }
+        )
         naive_clf.tokenizer = tokenizer
 
         # keep_prompt classifier (same schema length setting for fair comparison)
-        kp_clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "keep_prompt",
-            "max_length": max_length,
-            "max_schema_length": 5000,
-            "prompt_min_tokens": 64,
-            "prompt_side": "tail",
-            "model_name": TOKENIZER_NAME,
-        })
+        kp_clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "keep_prompt",
+                "max_length": max_length,
+                "max_schema_length": 5000,
+                "prompt_min_tokens": 64,
+                "prompt_side": "tail",
+                "model_name": TOKENIZER_NAME,
+            }
+        )
         kp_clf.tokenizer = tokenizer
 
         naive_stats = naive_clf.compute_truncation_stats([record])
@@ -350,12 +372,14 @@ class TestNaiveVsKeepPrompt:
         # Use max_schema_length=5000 to bypass char-level truncation,
         # letting the full schema reach the tokenizer so it consumes
         # enough tokens to force prompt clipping under max_length=128.
-        clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "naive",
-            "max_length": 128,
-            "max_schema_length": 5000,
-            "model_name": TOKENIZER_NAME,
-        })
+        clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "naive",
+                "max_length": 128,
+                "max_schema_length": 5000,
+                "model_name": TOKENIZER_NAME,
+            }
+        )
         clf.tokenizer = tokenizer
 
         stats = clf.compute_truncation_stats([record])
@@ -375,14 +399,16 @@ class TestNaiveVsKeepPrompt:
         prompt_min = 48
         max_length = 128
 
-        clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "keep_prompt",
-            "max_length": max_length,
-            "max_schema_length": 5000,
-            "prompt_min_tokens": prompt_min,
-            "prompt_side": "tail",
-            "model_name": TOKENIZER_NAME,
-        })
+        clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "keep_prompt",
+                "max_length": max_length,
+                "max_schema_length": 5000,
+                "prompt_min_tokens": prompt_min,
+                "prompt_side": "tail",
+                "model_name": TOKENIZER_NAME,
+            }
+        )
         clf.tokenizer = tokenizer
 
         stats = clf.compute_truncation_stats([record])
@@ -403,6 +429,7 @@ class TestNaiveVsKeepPrompt:
 
 # ── TruncationStats tests ───────────────────────────────────────────────────
 
+
 class TestTruncationStats:
     """Tests for the TruncationStats dataclass."""
 
@@ -418,10 +445,17 @@ class TestTruncationStats:
         )
         summary = stats.summary()
         expected_keys = {
-            "n_samples", "n_prompt_truncated", "pct_prompt_truncated",
-            "prompt_retained_mean", "prompt_retained_p50", "prompt_retained_p95",
-            "context_retained_mean", "context_retained_p50", "context_retained_p95",
-            "prompt_retention_ratio_mean", "prompt_retention_ratio_p50",
+            "n_samples",
+            "n_prompt_truncated",
+            "pct_prompt_truncated",
+            "prompt_retained_mean",
+            "prompt_retained_p50",
+            "prompt_retained_p95",
+            "context_retained_mean",
+            "context_retained_p50",
+            "context_retained_p95",
+            "prompt_retention_ratio_mean",
+            "prompt_retention_ratio_p50",
             "prompt_retention_ratio_p05",
         }
         assert expected_keys == set(summary.keys())
@@ -453,6 +487,7 @@ class TestTruncationStats:
 
 # ── Config save/load round-trip ──────────────────────────────────────────────
 
+
 class TestConfigRoundTrip:
     """Truncation config survives save/load cycle."""
 
@@ -460,21 +495,25 @@ class TestConfigRoundTrip:
         """Truncation strategy params are persisted in config.json."""
         import json
 
-        clf = ContextTransformerClassifier(config={
-            "truncate_strategy": "keep_prompt",
-            "prompt_min_tokens": 96,
-            "prompt_side": "tail",
-            "model_name": TOKENIZER_NAME,
-            "max_length": 64,
-            "num_epochs": 1,
-            "batch_size": 2,
-        })
+        clf = ContextTransformerClassifier(
+            config={
+                "truncate_strategy": "keep_prompt",
+                "prompt_min_tokens": 96,
+                "prompt_side": "tail",
+                "model_name": TOKENIZER_NAME,
+                "max_length": 64,
+                "num_epochs": 1,
+                "batch_size": 2,
+            }
+        )
         clf.tokenizer = tokenizer
 
         # Minimal training to enable save — just init model
         from transformers import AutoModelForSequenceClassification
+
         clf.model = AutoModelForSequenceClassification.from_pretrained(
-            TOKENIZER_NAME, num_labels=2,
+            TOKENIZER_NAME,
+            num_labels=2,
         )
         clf._is_trained = True
 

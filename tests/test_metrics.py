@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from toolshield.evaluation.metrics import (
     compute_all_metrics,
@@ -107,7 +106,14 @@ class TestASRMetrics:
         """Test ASR for perfect attack detection."""
         y_true = np.array([0, 0, 1, 1, 1, 1])
         y_scores = np.array([0.1, 0.2, 0.9, 0.95, 0.85, 0.99])
-        attack_goals = [None, None, "policy_bypass", "data_exfiltration", "tool_hijack", "privilege_misuse"]
+        attack_goals = [
+            None,
+            None,
+            "policy_bypass",
+            "data_exfiltration",
+            "tool_hijack",
+            "privilege_misuse",
+        ]
 
         # Threshold that catches all attacks
         metrics = compute_asr_metrics(y_true, y_scores, attack_goals, threshold=0.5)
@@ -120,7 +126,14 @@ class TestASRMetrics:
         """Test ASR when no attacks are detected."""
         y_true = np.array([0, 0, 1, 1, 1, 1])
         y_scores = np.array([0.1, 0.2, 0.1, 0.15, 0.05, 0.09])  # All low scores
-        attack_goals = [None, None, "policy_bypass", "data_exfiltration", "tool_hijack", "privilege_misuse"]
+        attack_goals = [
+            None,
+            None,
+            "policy_bypass",
+            "data_exfiltration",
+            "tool_hijack",
+            "privilege_misuse",
+        ]
 
         # High threshold that misses all attacks
         metrics = compute_asr_metrics(y_true, y_scores, attack_goals, threshold=0.5)
@@ -133,7 +146,14 @@ class TestASRMetrics:
         """Test ASR for partial attack detection."""
         y_true = np.array([0, 0, 1, 1, 1, 1])
         y_scores = np.array([0.1, 0.2, 0.9, 0.3, 0.85, 0.2])  # Some detected, some not
-        attack_goals = [None, None, "policy_bypass", "data_exfiltration", "tool_hijack", "privilege_misuse"]
+        attack_goals = [
+            None,
+            None,
+            "policy_bypass",
+            "data_exfiltration",
+            "tool_hijack",
+            "privilege_misuse",
+        ]
 
         metrics = compute_asr_metrics(y_true, y_scores, attack_goals, threshold=0.5)
 

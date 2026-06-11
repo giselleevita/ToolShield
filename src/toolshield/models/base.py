@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-from numpy.typing import ArrayLike
 
 from toolshield.data.schema import DatasetRecord
 
@@ -97,7 +96,7 @@ class BaseClassifier(ABC):
 
     @classmethod
     @abstractmethod
-    def load(cls, path: str | Path) -> "BaseClassifier":
+    def load(cls, path: str | Path) -> BaseClassifier:
         """Load a model from disk.
 
         Args:

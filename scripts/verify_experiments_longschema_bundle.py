@@ -48,6 +48,7 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 # ── Check A: summary.csv ────────────────────────────────────────────────────
 
+
 def check_summary(root: Path, protocols: list[str], n_seeds: int) -> bool:
     """Verify summary.csv exists and contains expected models/metrics."""
     path = root / "summary.csv"
@@ -70,9 +71,7 @@ def check_summary(root: Path, protocols: list[str], n_seeds: int) -> bool:
             # Check n_seeds
             actual_seeds = int(row["n_seeds"])
             if actual_seeds != n_seeds:
-                errors.append(
-                    f"{protocol}/{model}: n_seeds={actual_seeds}, expected {n_seeds}"
-                )
+                errors.append(f"{protocol}/{model}: n_seeds={actual_seeds}, expected {n_seeds}")
 
             # Check ROC-AUC regression bounds
             roc_auc = float(row["roc_auc_mean"])
@@ -100,6 +99,7 @@ def check_summary(root: Path, protocols: list[str], n_seeds: int) -> bool:
 
 # ── Check B: truncation_stats.csv ───────────────────────────────────────────
 
+
 def check_truncation_stats(root: Path, protocols: list[str]) -> bool:
     """Verify truncation_stats.csv has expected truncation patterns."""
     path = root / "truncation_stats.csv"
@@ -116,10 +116,7 @@ def check_truncation_stats(root: Path, protocols: list[str]) -> bool:
             ("naive", 1.0, 0.0),
             ("keep_prompt", 0.0, 1.0),
         ]:
-            matches = [
-                r for r in rows
-                if r["protocol"] == protocol and r["strategy"] == strategy
-            ]
+            matches = [r for r in rows if r["protocol"] == protocol and r["strategy"] == strategy]
             if not matches:
                 errors.append(f"Missing row: protocol={protocol}, strategy={strategy}")
                 continue
@@ -130,8 +127,7 @@ def check_truncation_stats(root: Path, protocols: list[str]) -> bool:
 
             if abs(pct - expected_pct) > tol:
                 errors.append(
-                    f"{protocol}/{strategy}: pct_prompt_truncated={pct}, "
-                    f"expected {expected_pct}"
+                    f"{protocol}/{strategy}: pct_prompt_truncated={pct}, expected {expected_pct}"
                 )
             if abs(retention - expected_retention) > tol:
                 errors.append(
@@ -149,6 +145,7 @@ def check_truncation_stats(root: Path, protocols: list[str]) -> bool:
 
 
 # ── Check C: split_hygiene.md + guards.json ─────────────────────────────────
+
 
 def check_split_hygiene(root: Path) -> bool:
     """Verify split hygiene report shows all PASS and guards.json is empty."""
@@ -190,6 +187,7 @@ def check_split_hygiene(root: Path) -> bool:
 
 # ── Check D: appendix_truncation_example.md ─────────────────────────────────
 
+
 def check_appendix_example(root: Path) -> bool:
     """Verify appendix truncation example exists and contains evidence strings."""
     path = root / "appendix_truncation_example.md"
@@ -220,6 +218,7 @@ def check_appendix_example(root: Path) -> bool:
 
 
 # ── Check E: raw metrics.json for seed_0 ────────────────────────────────────
+
 
 def check_raw_metrics(root: Path) -> bool:
     """Verify raw metrics.json exists for seed_0/S_attack_holdout for both models."""
@@ -252,6 +251,7 @@ def check_raw_metrics(root: Path) -> bool:
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(

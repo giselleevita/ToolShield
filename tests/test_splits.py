@@ -10,7 +10,6 @@ import pytest
 
 from toolshield.data.make_splits import (
     create_splits,
-    split_s_attack_holdout,
     split_s_random,
     split_s_tool_holdout,
     verify_all_splits_have_both_classes,
@@ -99,15 +98,13 @@ class TestTemplateLeakage:
         """Test the verify_tool_holdout_constraints helper function."""
         assert verify_tool_holdout_constraints(s_tool_holdout_splits)
 
-    def test_verify_leakage_detection(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_verify_leakage_detection(self, small_dataset: list[DatasetRecord]) -> None:
         """Test that leakage is detected when present."""
         # Create intentionally bad splits with leakage
         mid = len(small_dataset) // 2
         bad_splits = {
             "train": small_dataset[:mid],
-            "test": small_dataset[mid - 10:],  # Overlap of 10 records
+            "test": small_dataset[mid - 10 :],  # Overlap of 10 records
         }
 
         # Check if any templates overlap
@@ -213,9 +210,7 @@ class TestToolHoldoutConstraints:
         """Assert train set contains both benign and attack samples."""
         train = s_tool_holdout_splits["train"]
         labels = {r.label_binary for r in train}
-        assert labels == {0, 1}, (
-            f"S_tool_holdout train must have both classes, got {labels}"
-        )
+        assert labels == {0, 1}, f"S_tool_holdout train must have both classes, got {labels}"
 
     def test_val_has_both_classes(
         self, s_tool_holdout_splits: dict[str, list[DatasetRecord]]
@@ -223,9 +218,7 @@ class TestToolHoldoutConstraints:
         """Assert val set contains both benign and attack samples."""
         val = s_tool_holdout_splits["val"]
         labels = {r.label_binary for r in val}
-        assert labels == {0, 1}, (
-            f"S_tool_holdout val must have both classes, got {labels}"
-        )
+        assert labels == {0, 1}, f"S_tool_holdout val must have both classes, got {labels}"
 
     def test_test_has_both_labels(
         self, s_tool_holdout_splits: dict[str, list[DatasetRecord]]
@@ -233,9 +226,7 @@ class TestToolHoldoutConstraints:
         """Assert test set contains both benign and attack samples."""
         test = s_tool_holdout_splits["test"]
         labels = {r.label_binary for r in test}
-        assert labels == {0, 1}, (
-            f"S_tool_holdout test must have both classes, got {labels}"
-        )
+        assert labels == {0, 1}, f"S_tool_holdout test must have both classes, got {labels}"
 
     def test_test_holdout_tool_has_both_labels(
         self, s_tool_holdout_splits: dict[str, list[DatasetRecord]]
@@ -246,9 +237,7 @@ class TestToolHoldoutConstraints:
 
         assert len(export_report_records) > 0, "No exportReport records in test"
         labels = {r.label_binary for r in export_report_records}
-        assert labels == {0, 1}, (
-            f"exportReport test records need both classes, got {labels}"
-        )
+        assert labels == {0, 1}, f"exportReport test records need both classes, got {labels}"
 
     def test_train_has_attack_records(
         self, s_tool_holdout_splits: dict[str, list[DatasetRecord]]
@@ -259,8 +248,7 @@ class TestToolHoldoutConstraints:
         total = len(train)
         # At least 10% should be attacks
         assert attack_count > total * 0.1, (
-            f"Train has too few attacks: {attack_count}/{total} "
-            f"({attack_count/total:.1%})"
+            f"Train has too few attacks: {attack_count}/{total} ({attack_count / total:.1%})"
         )
 
 
@@ -302,61 +290,67 @@ class TestBothClassesValidation:
         records: list[DatasetRecord] = []
 
         # Benign records for non-holdout tools
-        for i, tool_name in enumerate(["getCustomerRecord", "searchTickets"]):
+        for _i, tool_name in enumerate(["getCustomerRecord", "searchTickets"]):
             tool = TOOL_BY_NAME[tool_name]
             for j in range(20):
-                records.append(DatasetRecord(
-                    id=f"ben_{tool_name}_{j}",
-                    language="en",
-                    role_sequence=["user"],
-                    tool_name=tool_name,
-                    tool_schema=tool.schema_,
-                    tool_description=tool.description,
-                    prompt=f"Benign prompt {j} for {tool_name}",
-                    label_binary=0,
-                    attack_family=None,
-                    attack_goal=None,
-                    template_id=f"benign_{tool_name}",
-                    variant_id="v0",
-                    seed=42,
-                ))
+                records.append(
+                    DatasetRecord(
+                        id=f"ben_{tool_name}_{j}",
+                        language="en",
+                        role_sequence=["user"],
+                        tool_name=tool_name,
+                        tool_schema=tool.schema_,
+                        tool_description=tool.description,
+                        prompt=f"Benign prompt {j} for {tool_name}",
+                        label_binary=0,
+                        attack_family=None,
+                        attack_goal=None,
+                        template_id=f"benign_{tool_name}",
+                        variant_id="v0",
+                        seed=42,
+                    )
+                )
 
         # Attack records ONLY for holdout tool
         holdout = TOOL_BY_NAME["exportReport"]
         for j in range(20):
-            records.append(DatasetRecord(
-                id=f"atk_export_{j}",
-                language="en",
-                role_sequence=["user"],
-                tool_name="exportReport",
-                tool_schema=holdout.schema_,
-                tool_description=holdout.description,
-                prompt=f"Attack prompt {j}",
-                label_binary=1,
-                attack_family="AF1",
-                attack_goal="exfiltrate",
-                template_id="attack_export_only",
-                variant_id="v0",
-                seed=42,
-            ))
+            records.append(
+                DatasetRecord(
+                    id=f"atk_export_{j}",
+                    language="en",
+                    role_sequence=["user"],
+                    tool_name="exportReport",
+                    tool_schema=holdout.schema_,
+                    tool_description=holdout.description,
+                    prompt=f"Attack prompt {j}",
+                    label_binary=1,
+                    attack_family="AF1",
+                    attack_goal="exfiltrate",
+                    template_id="attack_export_only",
+                    variant_id="v0",
+                    seed=42,
+                )
+            )
 
         # Benign records for holdout tool (so test has both classes)
         for j in range(10):
-            records.append(DatasetRecord(
-                id=f"ben_export_{j}",
-                language="en",
-                role_sequence=["user"],
-                tool_name="exportReport",
-                tool_schema=holdout.schema_,
-                tool_description=holdout.description,
-                prompt=f"Benign export {j}",
-                label_binary=0,
-                attack_family=None,
-                attack_goal=None,
-                template_id="benign_exportReport",
-                variant_id="v0",
-                seed=42,
-            ))
+            records.append(
+                DatasetRecord(
+                    id=f"ben_export_{j}",
+                    language="en",
+                    role_sequence=["user"],
+                    tool_name="exportReport",
+                    tool_schema=holdout.schema_,
+                    tool_description=holdout.description,
+                    prompt=f"Benign export {j}",
+                    label_binary=0,
+                    attack_family=None,
+                    attack_goal=None,
+                    template_id="benign_exportReport",
+                    variant_id="v0",
+                    seed=42,
+                )
+            )
 
         with pytest.raises(ValueError, match="single-class"):
             split_s_tool_holdout(records, seed=2026)
@@ -388,7 +382,9 @@ class TestSplitRatios:
         )
 
     def test_s_tool_holdout_total_coverage(
-        self, s_tool_holdout_splits: dict[str, list[DatasetRecord]], small_dataset: list[DatasetRecord]
+        self,
+        s_tool_holdout_splits: dict[str, list[DatasetRecord]],
+        small_dataset: list[DatasetRecord],
     ) -> None:
         """Assert all records are assigned to exactly one split for tool holdout."""
         total_in_splits = (
@@ -401,9 +397,7 @@ class TestSplitRatios:
             f"Total in splits ({total_in_splits}) != dataset size ({len(small_dataset)})"
         )
 
-    def test_deterministic_splitting(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_deterministic_splitting(self, small_dataset: list[DatasetRecord]) -> None:
         """Test that splitting is deterministic with same seed."""
         splits1 = split_s_random(small_dataset, seed=2026)
         splits2 = split_s_random(small_dataset, seed=2026)
@@ -413,9 +407,7 @@ class TestSplitRatios:
 
         assert train_ids1 == train_ids2, "Splitting is not deterministic"
 
-    def test_s_tool_holdout_deterministic(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_s_tool_holdout_deterministic(self, small_dataset: list[DatasetRecord]) -> None:
         """Test that S_tool_holdout splitting is deterministic."""
         splits1 = split_s_tool_holdout(small_dataset, seed=2026)
         splits2 = split_s_tool_holdout(small_dataset, seed=2026)
@@ -429,9 +421,7 @@ class TestSplitRatios:
 class TestCreateSplitsFunction:
     """Tests for the create_splits convenience function."""
 
-    def test_create_splits_s_random(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_create_splits_s_random(self, small_dataset: list[DatasetRecord]) -> None:
         """Test create_splits with S_random protocol."""
         splits = create_splits(small_dataset, protocol="S_random", seed=2026)
 
@@ -440,9 +430,7 @@ class TestCreateSplitsFunction:
         assert "test" in splits
         assert verify_no_template_leakage(splits)
 
-    def test_create_splits_s_attack_holdout(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_create_splits_s_attack_holdout(self, small_dataset: list[DatasetRecord]) -> None:
         """Test create_splits with S_attack_holdout protocol."""
         splits = create_splits(small_dataset, protocol="S_attack_holdout", seed=2026)
 
@@ -451,9 +439,7 @@ class TestCreateSplitsFunction:
         assert "test" in splits
         assert verify_no_template_leakage(splits)
 
-    def test_create_splits_s_tool_holdout(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_create_splits_s_tool_holdout(self, small_dataset: list[DatasetRecord]) -> None:
         """Test create_splits with S_tool_holdout protocol."""
         splits = create_splits(small_dataset, protocol="S_tool_holdout", seed=2026)
 
@@ -463,9 +449,7 @@ class TestCreateSplitsFunction:
         # Uses tool-holdout-specific constraints (not strict template isolation)
         assert verify_tool_holdout_constraints(splits)
 
-    def test_create_splits_invalid_protocol(
-        self, small_dataset: list[DatasetRecord]
-    ) -> None:
+    def test_create_splits_invalid_protocol(self, small_dataset: list[DatasetRecord]) -> None:
         """Test that invalid protocol raises ValueError."""
         with pytest.raises(ValueError, match="Unknown protocol"):
             create_splits(small_dataset, protocol="invalid_protocol", seed=2026)

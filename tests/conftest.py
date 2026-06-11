@@ -6,7 +6,6 @@ import pytest
 
 from toolshield.data.generate_dataset import generate_dataset
 from toolshield.data.make_splits import (
-    create_splits,
     split_s_attack_holdout,
     split_s_random,
     split_s_tool_holdout,

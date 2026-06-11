@@ -18,7 +18,7 @@ import random
 from collections import Counter, defaultdict
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from toolshield.data.schema import DatasetRecord, SplitManifest
 from toolshield.utils.io import load_jsonl, save_jsonl, save_manifest
@@ -72,7 +72,7 @@ def _create_split_manifest(
     label_counts = Counter(r.label_binary for r in records)
     family_counts = Counter(r.attack_family for r in records)
     tool_counts = Counter(r.tool_name for r in records)
-    template_ids = sorted(set(r.template_id for r in records))
+    template_ids = sorted({r.template_id for r in records})
 
     return SplitManifest(
         protocol=protocol,
@@ -119,7 +119,7 @@ def _stratified_template_split(
     val_templates: list[str] = []
     test_templates: list[str] = []
 
-    for stratum, templates in strata.items():
+    for _stratum, templates in strata.items():
         rng.shuffle(templates)
         n = len(templates)
         n_train = max(1, int(n * train_ratio))
@@ -131,8 +131,8 @@ def _stratified_template_split(
             n_val = max(1, min(n_val, n - n_train - 1))
 
         train_templates.extend(templates[:n_train])
-        val_templates.extend(templates[n_train:n_train + n_val])
-        test_templates.extend(templates[n_train + n_val:])
+        val_templates.extend(templates[n_train : n_train + n_val])
+        test_templates.extend(templates[n_train + n_val :])
 
     return train_templates, val_templates, test_templates
 
@@ -218,13 +218,15 @@ def split_s_attack_holdout(
             non_holdout_templates.append(template_id)
 
     # Split non-holdout templates into train/val, with some benign for test
-    non_holdout_groups = {tid: template_groups[tid] for tid in non_holdout_templates}
+    {tid: template_groups[tid] for tid in non_holdout_templates}
 
     # Separate benign and attack templates
-    benign_templates = [tid for tid in non_holdout_templates
-                        if template_groups[tid][0].label_binary == 0]
-    attack_templates = [tid for tid in non_holdout_templates
-                        if template_groups[tid][0].label_binary == 1]
+    benign_templates = [
+        tid for tid in non_holdout_templates if template_groups[tid][0].label_binary == 0
+    ]
+    attack_templates = [
+        tid for tid in non_holdout_templates if template_groups[tid][0].label_binary == 1
+    ]
 
     # Shuffle
     rng.shuffle(benign_templates)
@@ -310,10 +312,8 @@ def split_s_tool_holdout(
     non_holdout_groups = _group_by_template(non_holdout_records)
 
     # ── Step 3: stratified template split for train / val / (extra-test)
-    train_templates, val_templates, extra_test_templates = (
-        _stratified_template_split(
-            non_holdout_groups, rng, train_ratio, val_ratio
-        )
+    train_templates, val_templates, extra_test_templates = _stratified_template_split(
+        non_holdout_groups, rng, train_ratio, val_ratio
     )
 
     # ── Step 4: collect records ─────────────────────────────────────
@@ -380,8 +380,9 @@ def create_splits(
     elif protocol_str == SplitProtocol.S_TOOL_HOLDOUT.value:
         return split_s_tool_holdout(records, seed=seed)  # type: ignore
     else:
-        raise ValueError(f"Unknown protocol: {protocol}. "
-                        f"Available: {[p.value for p in SplitProtocol]}")
+        raise ValueError(
+            f"Unknown protocol: {protocol}. Available: {[p.value for p in SplitProtocol]}"
+        )
 
 
 def verify_no_template_leakage(
@@ -399,12 +400,10 @@ def verify_no_template_leakage(
 
     for i, name1 in enumerate(split_names):
         templates1 = {r.template_id for r in splits[name1]}
-        for name2 in split_names[i + 1:]:
+        for name2 in split_names[i + 1 :]:
             templates2 = {r.template_id for r in splits[name2]}
             overlap = templates1 & templates2
-            assert len(overlap) == 0, (
-                f"Template leakage between {name1} and {name2}: {overlap}"
-            )
+            assert len(overlap) == 0, f"Template leakage between {name1} and {name2}: {overlap}"
 
     return True
 
@@ -450,17 +449,14 @@ def verify_tool_holdout_constraints(
     for name, records in splits.items():
         labels = {r.label_binary for r in records}
         assert len(labels) >= 2, (
-            f"Split '{name}' is single-class (labels={labels}); "
-            f"need both benign and attack."
+            f"Split '{name}' is single-class (labels={labels}); need both benign and attack."
         )
 
     # 4. Template disjointness within train / val
     train_templates = {r.template_id for r in train}
     val_templates = {r.template_id for r in val}
     overlap = train_templates & val_templates
-    assert len(overlap) == 0, (
-        f"Template leakage between train and val: {overlap}"
-    )
+    assert len(overlap) == 0, f"Template leakage between train and val: {overlap}"
 
     # 5. No record-ID leakage across any splits
     train_ids = {r.id for r in train}

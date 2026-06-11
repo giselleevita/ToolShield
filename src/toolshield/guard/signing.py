@@ -6,7 +6,6 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -52,7 +51,7 @@ class GuardSigner:
         return self._secret is not None
 
     @classmethod
-    def from_environment(cls) -> "GuardSigner":
+    def from_environment(cls) -> GuardSigner:
         return cls(os.getenv("TOOLSHIELD_SIGNING_SECRET"))
 
     def sign(
@@ -107,7 +106,9 @@ class GuardSigner:
     def verify(self, record: SignedDecisionRecord) -> bool:
         if not self._secret:
             return False
-        expected = hmac.new(self._secret, record.payload_hash.encode("utf-8"), hashlib.sha256).hexdigest()
+        expected = hmac.new(
+            self._secret, record.payload_hash.encode("utf-8"), hashlib.sha256
+        ).hexdigest()
         return hmac.compare_digest(expected, record.signature)
 
     def _model_config_hash(self, model_path: str) -> str:

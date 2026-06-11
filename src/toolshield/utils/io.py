@@ -86,7 +86,7 @@ def iter_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
                 yield json.loads(line)
 
 
-def save_jsonl(records: list[dict[str, Any]] | list["DatasetRecord"], path: str | Path) -> int:
+def save_jsonl(records: list[dict[str, Any]] | list[DatasetRecord], path: str | Path) -> int:
     """Save records to a JSONL file.
 
     Args:
@@ -103,10 +103,7 @@ def save_jsonl(records: list[dict[str, Any]] | list["DatasetRecord"], path: str 
     with path.open("w", encoding="utf-8") as f:
         for record in records:
             # Handle both dicts and Pydantic models
-            if hasattr(record, "model_dump"):
-                data = record.model_dump()
-            else:
-                data = record
+            data = record.model_dump() if hasattr(record, "model_dump") else record
             f.write(json.dumps(data, ensure_ascii=False) + "\n")
             count += 1
 

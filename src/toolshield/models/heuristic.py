@@ -21,7 +21,6 @@ import numpy as np
 from toolshield.data.schema import DatasetRecord
 from toolshield.models.base import BaseClassifier
 
-
 # Default suspicious keywords indicating potential injection
 # NOTE: Deliberately excludes tool-specific names to ensure fair tool-holdout
 # evaluation. This is the "Generic Injection Heuristic" (H1) baseline.
@@ -125,19 +124,13 @@ class HeuristicClassifier(BaseClassifier):
         self.suspicious_patterns = self.config.get(
             "suspicious_patterns", DEFAULT_SUSPICIOUS_PATTERNS
         )
-        self.allowlist_patterns = self.config.get(
-            "allowlist_patterns", DEFAULT_ALLOWLIST_PATTERNS
-        )
+        self.allowlist_patterns = self.config.get("allowlist_patterns", DEFAULT_ALLOWLIST_PATTERNS)
         self.case_sensitive = self.config.get("case_sensitive", False)
 
         # Compile patterns
         flags = 0 if self.case_sensitive else re.IGNORECASE
-        self._compiled_suspicious = [
-            re.compile(p, flags) for p in self.suspicious_patterns
-        ]
-        self._compiled_allowlist = [
-            re.compile(p, flags) for p in self.allowlist_patterns
-        ]
+        self._compiled_suspicious = [re.compile(p, flags) for p in self.suspicious_patterns]
+        self._compiled_allowlist = [re.compile(p, flags) for p in self.allowlist_patterns]
 
         # Pre-process keywords
         if not self.case_sensitive:
@@ -206,10 +199,7 @@ class HeuristicClassifier(BaseClassifier):
         Returns:
             True if text matches any allowlist pattern.
         """
-        for pattern in self._compiled_allowlist:
-            if pattern.search(text):
-                return True
-        return False
+        return any(pattern.search(text) for pattern in self._compiled_allowlist)
 
     def _score_single(self, prompt: str) -> tuple[float, dict[str, Any]]:
         """Score a single prompt.
@@ -309,7 +299,7 @@ class HeuristicClassifier(BaseClassifier):
             json.dump(config_to_save, f, indent=2)
 
     @classmethod
-    def load(cls, path: str | Path) -> "HeuristicClassifier":
+    def load(cls, path: str | Path) -> HeuristicClassifier:
         """Load a classifier from disk.
 
         Args:

@@ -40,6 +40,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def load_split(split_dir: Path, name: str) -> list[DatasetRecord]:
     path = split_dir / f"{name}.jsonl"
     if not path.exists():
@@ -54,6 +55,7 @@ def load_protocol(splits_dir: Path, protocol: str) -> dict[str, list[DatasetReco
 
 
 # ── Check functions ──────────────────────────────────────────────────────────
+
 
 def check_template_leakage(
     splits: dict[str, list[DatasetRecord]], protocol: str, is_tool_holdout: bool
@@ -122,7 +124,7 @@ def check_class_balance(
     for s in ["train", "val"]:
         labels = Counter(r.label_binary for r in splits[s])
         has_both = 0 in labels and 1 in labels
-        detail = f"{s}: benign={labels.get(0,0)}, attack={labels.get(1,0)}"
+        detail = f"{s}: benign={labels.get(0, 0)}, attack={labels.get(1, 0)}"
         guard = None
         if not has_both:
             guard = {
@@ -138,10 +140,17 @@ def check_class_balance(
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Verify longschema split hygiene")
-    parser.add_argument("--splits-dir", type=Path, default=PROJECT_ROOT / "data" / "splits_longschema")
-    parser.add_argument("--output-dir", type=Path, default=PROJECT_ROOT / "data" / "reports" / "experiments_longschema")
+    parser.add_argument(
+        "--splits-dir", type=Path, default=PROJECT_ROOT / "data" / "splits_longschema"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=PROJECT_ROOT / "data" / "reports" / "experiments_longschema",
+    )
     args = parser.parse_args()
 
     splits_dir = args.splits_dir
@@ -158,12 +167,12 @@ def main() -> int:
         console.print(f"[red]No protocols found in {splits_dir}[/red]")
         return 1
 
-    console.print(f"[bold blue]Long-Schema Split Verification[/bold blue]")
+    console.print("[bold blue]Long-Schema Split Verification[/bold blue]")
     console.print(f"Splits dir: {splits_dir}")
     console.print(f"Protocols:  {protocols}\n")
 
-    rows: list[dict] = []          # for CSV
-    guards: list[dict] = []        # for guards.json
+    rows: list[dict] = []  # for CSV
+    guards: list[dict] = []  # for guards.json
     any_hard_fail = False
 
     for protocol in protocols:
@@ -176,21 +185,27 @@ def main() -> int:
 
         # 1. Template leakage
         ok, detail = check_template_leakage(splits, protocol, is_tool)
-        rows.append({"protocol": protocol, "check": "template_leakage", "passed": ok, "detail": detail})
+        rows.append(
+            {"protocol": protocol, "check": "template_leakage", "passed": ok, "detail": detail}
+        )
         if not ok:
             any_hard_fail = True
 
         # 2. AF4 holdout (if applicable)
         if "attack_holdout" in protocol.lower():
             ok, detail = check_af4_holdout(splits)
-            rows.append({"protocol": protocol, "check": "af4_holdout", "passed": ok, "detail": detail})
+            rows.append(
+                {"protocol": protocol, "check": "af4_holdout", "passed": ok, "detail": detail}
+            )
             if not ok:
                 any_hard_fail = True
 
         # 3. Tool holdout (if applicable)
         if is_tool:
             ok, detail = check_tool_holdout(splits)
-            rows.append({"protocol": protocol, "check": "tool_holdout", "passed": ok, "detail": detail})
+            rows.append(
+                {"protocol": protocol, "check": "tool_holdout", "passed": ok, "detail": detail}
+            )
             if not ok:
                 any_hard_fail = True
 
@@ -201,10 +216,14 @@ def main() -> int:
             if guard:
                 guards.append(guard)
                 all_balanced = False
-            rows.append({"protocol": protocol, "check": "class_balance", "passed": ok, "detail": detail})
+            rows.append(
+                {"protocol": protocol, "check": "class_balance", "passed": ok, "detail": detail}
+            )
         if not all_balanced:
             # Class imbalance is a soft warning, not a hard failure
-            console.print(f"  [yellow]  {protocol}: class balance warning — see guards.json[/yellow]")
+            console.print(
+                f"  [yellow]  {protocol}: class balance warning — see guards.json[/yellow]"
+            )
 
     # ── Print table ──────────────────────────────────────────────────────
     table = Table(title="Split Hygiene Report")
@@ -221,6 +240,7 @@ def main() -> int:
 
     # ── Save CSV ─────────────────────────────────────────────────────────
     import csv
+
     csv_path = output_dir / "split_hygiene.csv"
     with open(csv_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["protocol", "check", "passed", "detail"])
@@ -245,7 +265,9 @@ def main() -> int:
     guards_path = output_dir / "guards.json"
     with open(guards_path, "w") as f:
         json.dump(guards, f, indent=2)
-    console.print(f"Guards saved: {guards_path} ({len(guards)} issue{'s' if len(guards) != 1 else ''})")
+    console.print(
+        f"Guards saved: {guards_path} ({len(guards)} issue{'s' if len(guards) != 1 else ''})"
+    )
 
     # ── Summary ──────────────────────────────────────────────────────────
     n_pass = sum(1 for r in rows if r["passed"])

@@ -71,9 +71,7 @@ class DatasetRecord(BaseModel):
     attack_family: str | None = Field(
         default=None, description="Attack family (AF1-AF4) or None for benign"
     )
-    attack_goal: str | None = Field(
-        default=None, description="Attack goal or None for benign"
-    )
+    attack_goal: str | None = Field(default=None, description="Attack goal or None for benign")
     template_id: str = Field(..., description="Template identifier for splitting")
     variant_id: str = Field(..., description="Variant within template")
     seed: int = Field(..., description="Generation seed")

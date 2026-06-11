@@ -28,7 +28,9 @@ def get_git_hash() -> str:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=PROJECT_ROOT,
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         return result.stdout.strip() if result.returncode == 0 else "unknown (not a git repo)"
     except Exception:
@@ -41,10 +43,14 @@ def main() -> None:
     parser.add_argument("--dataset-config", type=Path, required=True)
     parser.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     parser.add_argument("--protocols", nargs="+", default=["S_random", "S_attack_holdout"])
-    parser.add_argument("--models", nargs="+", default=[
-        "context_transformer_naive_longschema",
-        "context_transformer_keep_prompt_longschema",
-    ])
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        default=[
+            "context_transformer_naive_longschema",
+            "context_transformer_keep_prompt_longschema",
+        ],
+    )
     args = parser.parse_args()
 
     # Load dataset config
@@ -71,8 +77,8 @@ the attacker-controlled signal via a dedicated prompt token reservation.
 |-----------|-------|
 | Dataset config | `{args.dataset_config}` |
 | inflate_schema_to | {max_schema} characters |
-| n_samples | {ds_cfg.get('n_samples', 'N/A')} |
-| seed (dataset) | {ds_cfg.get('seed', 'N/A')} |
+| n_samples | {ds_cfg.get("n_samples", "N/A")} |
+| seed (dataset) | {ds_cfg.get("seed", "N/A")} |
 | Seeds (training) | {args.seeds} |
 | Protocols | {args.protocols} |
 | Models | {args.models} |
@@ -107,7 +113,7 @@ toolshield generate --config configs/dataset.yaml --output data/
 python scripts/inflate_schemas.py \\
     --input data/dataset.jsonl \\
     --output data/dataset_longschema.jsonl \\
-    --target-chars {max_schema} --seed {ds_cfg.get('seed', 1337)}
+    --target-chars {max_schema} --seed {ds_cfg.get("seed", 1337)}
 
 # 3. Generate splits
 toolshield split --protocol S_random \\
@@ -119,8 +125,8 @@ toolshield split --protocol S_attack_holdout \\
 
 # 4. Run truncation ablation
 python scripts/run_truncation_ablation.py \\
-    --seeds {' '.join(str(s) for s in args.seeds)} \\
-    --protocols {' '.join(args.protocols)} \\
+    --seeds {" ".join(str(s) for s in args.seeds)} \\
+    --protocols {" ".join(args.protocols)} \\
     --experiment-tag experiments_longschema \\
     --splits-dir data/splits_longschema \\
     --model-set longschema

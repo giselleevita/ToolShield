@@ -43,66 +43,50 @@ from pathlib import Path
 
 def main() -> None:
     """Run the FastAPI demo server."""
-    parser = argparse.ArgumentParser(
-        description="Launch ToolShield guard demo service"
-    )
+    parser = argparse.ArgumentParser(description="Launch ToolShield guard demo service")
     parser.add_argument(
-        "--host",
-        type=str,
-        default="0.0.0.0",
-        help="Host to bind to (default: 0.0.0.0)"
+        "--host", type=str, default="127.0.0.1", help="Host to bind to (default: 127.0.0.1)"
     )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=8000,
-        help="Port to bind to (default: 8000)"
-    )
+    parser.add_argument("--port", type=int, default=8000, help="Port to bind to (default: 8000)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Path to model directory (overrides TOOLSHIELD_MODEL_PATH)"
+        help="Path to model directory (overrides TOOLSHIELD_MODEL_PATH)",
     )
+    parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
     parser.add_argument(
-        "--reload",
-        action="store_true",
-        help="Enable auto-reload for development"
+        "--workers", type=int, default=1, help="Number of worker processes (default: 1)"
     )
-    parser.add_argument(
-        "--workers",
-        type=int,
-        default=1,
-        help="Number of worker processes (default: 1)"
-    )
-    
+
     args = parser.parse_args()
-    
+
     # Set model path if provided
     if args.model:
         os.environ["TOOLSHIELD_MODEL_PATH"] = args.model
         print(f"Using model from: {args.model}")
-    
+
     # Check if model exists
     model_path = os.getenv("TOOLSHIELD_MODEL_PATH", "outputs/tfidf_lr/")
     if not Path(model_path).exists():
         print(f"Warning: Model directory not found: {model_path}")
         print("The server will attempt to load the model on first request.")
         print("Run 'make train' first to train a model.")
-    
+
     print(f"\nStarting ToolShield Guard API on http://{args.host}:{args.port}")
     print("\nEndpoints:")
     print(f"  POST http://localhost:{args.port}/guard - Evaluate a prompt")
     print(f"  GET  http://localhost:{args.port}/health - Health check")
     print(f"  GET  http://localhost:{args.port}/ - API info")
     print("\nExample:")
-    print(f'  curl -X POST http://localhost:{args.port}/guard \\')
+    print(f"  curl -X POST http://localhost:{args.port}/guard \\")
     print('       -H "Content-Type: application/json" \\')
     print('       -d \'{"prompt": "Please look up customer 12345"}\'')
     print("\nPress Ctrl+C to stop the server.\n")
-    
+
     try:
         import uvicorn
+
         uvicorn.run(
             "toolshield.demo.app:app",
             host=args.host,

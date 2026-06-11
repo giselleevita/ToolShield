@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -26,7 +26,7 @@ from rich.table import Table
 from toolshield.data.generate_dataset import generate_and_save
 from toolshield.data.make_splits import SplitProtocol, create_and_save_splits
 from toolshield.data.schema import DatasetRecord
-from toolshield.evaluation.metrics import compute_all_metrics, print_metrics
+from toolshield.evaluation.metrics import print_metrics
 from toolshield.utils.io import load_config, load_jsonl, save_manifest
 
 # Initialize Typer app
@@ -46,7 +46,7 @@ console = Console()
 
 @app.command()
 def generate(
-    config: Optional[Path] = typer.Option(
+    config: Path | None = typer.Option(
         None, "--config", "-c", help="Path to dataset configuration YAML"
     ),
     output: Path = typer.Option(
@@ -104,12 +104,8 @@ def split(
     protocol: str = typer.Option(
         ..., "--protocol", "-p", help="Split protocol (S_random, S_attack_holdout, S_tool_holdout)"
     ),
-    input_path: Path = typer.Option(
-        ..., "--input", "-i", help="Input dataset.jsonl path"
-    ),
-    output: Path = typer.Option(
-        ..., "--output", "-o", help="Output directory for splits"
-    ),
+    input_path: Path = typer.Option(..., "--input", "-i", help="Input dataset.jsonl path"),
+    output: Path = typer.Option(..., "--output", "-o", help="Output directory for splits"),
     seed: int = typer.Option(2026, "--seed", "-s", help="Random seed for splitting"),
 ) -> None:
     """Create train/val/test splits using specified protocol."""
@@ -162,15 +158,16 @@ def _load_records(path: Path) -> list[DatasetRecord]:
 @app.command()
 def train(
     model: str = typer.Option(
-        ..., "--model", "-m", help="Model type (heuristic, tfidf_lr, transformer, context_transformer)"
+        ...,
+        "--model",
+        "-m",
+        help="Model type (heuristic, tfidf_lr, transformer, context_transformer)",
     ),
     split_dir: Path = typer.Option(
         ..., "--split", "-s", help="Directory containing train.jsonl and val.jsonl"
     ),
-    output: Path = typer.Option(
-        ..., "--output", "-o", help="Output directory for model artifacts"
-    ),
-    config: Optional[Path] = typer.Option(
+    output: Path = typer.Option(..., "--output", "-o", help="Output directory for model artifacts"),
+    config: Path | None = typer.Option(
         None, "--config", "-c", help="Path to model configuration YAML"
     ),
 ) -> None:
@@ -204,21 +201,29 @@ def train(
 
     if model == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
+
         classifier = HeuristicClassifier(config=model_config)
     elif model == "heuristic_score":
         from toolshield.models.heuristic_score import ScoredHeuristicClassifier
+
         classifier = ScoredHeuristicClassifier(config=model_config)
     elif model == "tfidf_lr":
         from toolshield.models.tfidf_lr import TfidfLRClassifier
+
         classifier = TfidfLRClassifier(config=model_config)
     elif model == "transformer":
         from toolshield.models.transformer import TransformerClassifier
+
         classifier = TransformerClassifier(config=model_config)
     elif model in (
-        "context_transformer", "context_transformer_naive", "context_transformer_keep_prompt",
-        "context_transformer_naive_longschema", "context_transformer_keep_prompt_longschema",
+        "context_transformer",
+        "context_transformer_naive",
+        "context_transformer_keep_prompt",
+        "context_transformer_naive_longschema",
+        "context_transformer_keep_prompt_longschema",
     ):
         from toolshield.models.context_transformer import ContextTransformerClassifier
+
         classifier = ContextTransformerClassifier(config=model_config)
     else:
         console.print(f"[red]Error:[/red] Unknown model type: {model}")
@@ -274,18 +279,23 @@ def _load_model(model_path: Path) -> Any:
 
     if model_type == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
+
         return HeuristicClassifier.load(model_path)
     elif model_type == "heuristic_score":
         from toolshield.models.heuristic_score import ScoredHeuristicClassifier
+
         return ScoredHeuristicClassifier.load(model_path)
     elif model_type == "tfidf_lr":
         from toolshield.models.tfidf_lr import TfidfLRClassifier
+
         return TfidfLRClassifier.load(model_path)
     elif model_type == "transformer":
         from toolshield.models.transformer import TransformerClassifier
+
         return TransformerClassifier.load(model_path)
     elif model_type == "context_transformer":
         from toolshield.models.context_transformer import ContextTransformerClassifier
+
         return ContextTransformerClassifier.load(model_path)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -293,26 +303,22 @@ def _load_model(model_path: Path) -> Any:
 
 @app.command(name="eval")
 def evaluate(
-    model_path: Path = typer.Option(
-        ..., "--model", "-m", help="Path to trained model directory"
-    ),
-    test_path: Path = typer.Option(
-        ..., "--test", "-t", help="Path to test.jsonl file"
-    ),
-    val_path: Optional[Path] = typer.Option(
+    model_path: Path = typer.Option(..., "--model", "-m", help="Path to trained model directory"),
+    test_path: Path = typer.Option(..., "--test", "-t", help="Path to test.jsonl file"),
+    val_path: Path | None = typer.Option(
         None, "--val", "-v", help="Path to val.jsonl for budget threshold selection"
     ),
-    output: Optional[Path] = typer.Option(
+    output: Path | None = typer.Option(
         None, "--output", "-o", help="Output path for evaluation results JSON"
     ),
-    threshold: float = typer.Option(
-        0.5, "--threshold", help="Classification threshold"
-    ),
+    threshold: float = typer.Option(0.5, "--threshold", help="Classification threshold"),
     measure_latency: bool = typer.Option(
         True, "--latency/--no-latency", help="Measure inference latency"
     ),
     latency_mode: str = typer.Option(
-        "warm", "--latency-mode", help="Latency measurement mode: 'warm' (default, with warmup) or 'cold'"
+        "warm",
+        "--latency-mode",
+        help="Latency measurement mode: 'warm' (default, with warmup) or 'cold'",
     ),
 ) -> None:
     """Evaluate a trained model on test data."""
@@ -331,7 +337,7 @@ def evaluate(
         console.print(f"Loaded {model_type} model from: {model_path}")
     except (FileNotFoundError, ValueError) as e:
         console.print(f"[red]Error:[/red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
 
     # Load test data
     console.print(f"Loading test data from: {test_path}")
@@ -347,9 +353,9 @@ def evaluate(
 
     # Use evaluator for full evaluation
     from toolshield.evaluation.evaluator import ModelEvaluator
-    
+
     evaluator = ModelEvaluator(measure_latency=measure_latency, latency_mode=latency_mode)
-    
+
     # Infer protocol from path
     protocol = "S_random"
     path_str = str(test_path)
@@ -357,7 +363,7 @@ def evaluate(
         protocol = "S_attack_holdout"
     elif "S_tool_holdout" in path_str:
         protocol = "S_tool_holdout"
-    
+
     result = evaluator.evaluate_model(
         model=classifier,
         test_records=test_records,
@@ -378,7 +384,7 @@ def evaluate(
         table.add_column("TPR")
         table.add_column("ASR")
         table.add_column("Blocked Benign")
-        
+
         for br in result.budget_results:
             table.add_row(
                 f"{br.budget:.2%}",
@@ -409,33 +415,31 @@ def report(
     input_dir: Path = typer.Option(
         ..., "--input-dir", "-i", help="Directory containing evaluation JSON files"
     ),
-    output: Path = typer.Option(
-        ..., "--output", "-o", help="Output directory for reports"
-    ),
+    output: Path = typer.Option(..., "--output", "-o", help="Output directory for reports"),
 ) -> None:
     """Generate combined reports (tables.csv, metrics.json) from evaluation results."""
     console.print("[bold blue]ToolShield Report Generator[/bold blue]")
-    
+
     from toolshield.evaluation.evaluator import EvaluationResult, ModelEvaluator
-    
+
     # Find all metrics JSON files in input directory
     json_files = list(input_dir.glob("*_metrics.json"))
-    
+
     if not json_files:
         console.print(f"[yellow]No metrics files found in {input_dir}[/yellow]")
         raise typer.Exit(1)
-    
+
     console.print(f"Found {len(json_files)} evaluation files")
-    
+
     # Load results
     results = []
     for json_file in json_files:
         with json_file.open() as f:
             data = json.load(f)
-        
+
         # Reconstruct EvaluationResult from JSON
         from toolshield.evaluation.metrics import MetricsResult
-        
+
         metrics_data = data.get("metrics", {})
         metrics = MetricsResult(
             roc_auc=metrics_data.get("roc_auc", 0.0),
@@ -454,11 +458,11 @@ def report(
             latency_p50_ms=metrics_data.get("latency_p50_ms"),
             latency_p95_ms=metrics_data.get("latency_p95_ms"),
         )
-        
+
         # Extract model name from filename or data
         model_name = data.get("model_name", json_file.stem.replace("_metrics", ""))
         protocol = data.get("protocol", "S_random")
-        
+
         result = EvaluationResult(
             model_name=model_name,
             protocol=protocol,
@@ -466,11 +470,11 @@ def report(
             budget_results=[],
         )
         results.append(result)
-    
+
     # Generate reports
     evaluator = ModelEvaluator()
     paths = evaluator.generate_all_reports(results, output)
-    
+
     console.print("[green]Reports generated:[/green]")
     for name, path in paths.items():
         console.print(f"  {name}: {path}")

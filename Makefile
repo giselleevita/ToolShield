@@ -40,7 +40,7 @@ security-audit: ## Audit locked Python dependencies for known vulnerabilities
 	$(PYTHON) -m pip_audit -r requirements-dev.lock
 
 bandit: ## Run Bandit over source and scripts
-	bandit -q -r src/toolshield scripts -x tests
+	bandit -q -c pyproject.toml -r src/toolshield scripts
 
 security-scan: lock ## Run dependency and static security scans
 	$(MAKE) security-audit

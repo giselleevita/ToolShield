@@ -9,7 +9,6 @@ Input: prompt text only (no context).
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -19,9 +18,9 @@ from torch.utils.data import Dataset as TorchDataset
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
+    EvalPrediction,
     Trainer,
     TrainingArguments,
-    EvalPrediction,
 )
 
 from toolshield.data.schema import DatasetRecord
@@ -115,6 +114,7 @@ class TransformerClassifier(BaseClassifier):
         Args:
             config: Configuration dictionary with optional keys:
                 - model_name: HuggingFace model name (default: "distilroberta-base")
+                - model_revision: Immutable Hugging Face model revision
                 - max_length: Maximum sequence length (default: 512)
                 - batch_size: Training batch size (default: 16)
                 - learning_rate: Learning rate (default: 2e-5)
@@ -126,6 +126,10 @@ class TransformerClassifier(BaseClassifier):
         super().__init__(config)
 
         self.model_name = self.config.get("model_name", "distilroberta-base")
+        self.model_revision = self.config.get(
+            "model_revision",
+            "fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b",
+        )
         self.max_length = self.config.get("max_length", 512)
         self.batch_size = self.config.get("batch_size", 16)
         self.learning_rate = self.config.get("learning_rate", 2e-5)
@@ -213,9 +217,13 @@ class TransformerClassifier(BaseClassifier):
             Dictionary containing training metrics.
         """
         # Initialize tokenizer and model
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name,
+            revision=self.model_revision,
+        )
         self.model = AutoModelForSequenceClassification.from_pretrained(
             self.model_name,
+            revision=self.model_revision,
             num_labels=2,
             problem_type="single_label_classification",
         )
@@ -244,7 +252,7 @@ class TransformerClassifier(BaseClassifier):
             weight_decay=self.weight_decay,
             eval_strategy="epoch" if eval_dataset else "no",
             save_strategy="epoch",
-            load_best_model_at_end=True if eval_dataset else False,
+            load_best_model_at_end=bool(eval_dataset),
             metric_for_best_model="roc_auc" if eval_dataset else None,
             greater_is_better=True,
             logging_dir=str(output_dir / "logs"),
@@ -279,13 +287,15 @@ class TransformerClassifier(BaseClassifier):
             val_goals = self.extract_attack_goals(val_records)
 
             val_metrics = compute_all_metrics(val_labels_arr, val_scores, val_goals)
-            result.update({
-                "val_samples": len(val_records),
-                "val_roc_auc": val_metrics.roc_auc,
-                "val_pr_auc": val_metrics.pr_auc,
-                "val_fpr_at_tpr_90": val_metrics.fpr_at_tpr_90,
-                "val_fpr_at_tpr_95": val_metrics.fpr_at_tpr_95,
-            })
+            result.update(
+                {
+                    "val_samples": len(val_records),
+                    "val_roc_auc": val_metrics.roc_auc,
+                    "val_pr_auc": val_metrics.pr_auc,
+                    "val_fpr_at_tpr_90": val_metrics.fpr_at_tpr_90,
+                    "val_fpr_at_tpr_95": val_metrics.fpr_at_tpr_95,
+                }
+            )
 
             print("\nValidation Metrics:")
             print_metrics(val_metrics)
@@ -316,24 +326,24 @@ class TransformerClassifier(BaseClassifier):
             return np.array([])
 
         batch_size = batch_size or self.batch_size
-        
+
         # Ensure model is in eval mode
         self.model.eval()
         device = next(self.model.parameters()).device
 
         all_scores = []
-        
+
         # Process in batches with inference_mode for efficiency
         with torch.inference_mode():
             for i in range(0, len(records), batch_size):
-                batch_records = records[i:i + batch_size]
-                
+                batch_records = records[i : i + batch_size]
+
                 # Tokenize batch (subclasses override for custom strategies)
                 encodings = self._prepare_batch_encodings(batch_records)
-                
+
                 input_ids = encodings["input_ids"].to(device)
                 attention_mask = encodings["attention_mask"].to(device)
-                
+
                 # Forward pass
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
                 logits = outputs.logits
@@ -342,7 +352,7 @@ class TransformerClassifier(BaseClassifier):
                 all_scores.extend(scores)
 
         return np.array(all_scores)
-    
+
     def predict_scores_timed(
         self,
         records: list[DatasetRecord],
@@ -358,7 +368,7 @@ class TransformerClassifier(BaseClassifier):
             Tuple of (scores, tokenize_time_ms, infer_time_ms).
         """
         import time
-        
+
         if not self._is_trained or self.model is None or self.tokenizer is None:
             raise RuntimeError("Model must be trained or loaded before prediction")
 
@@ -366,25 +376,25 @@ class TransformerClassifier(BaseClassifier):
             return np.array([]), 0.0, 0.0
 
         batch_size = batch_size or self.batch_size
-        
+
         self.model.eval()
         device = next(self.model.parameters()).device
 
         all_scores = []
         total_tokenize_ms = 0.0
         total_infer_ms = 0.0
-        
+
         with torch.inference_mode():
             for i in range(0, len(records), batch_size):
-                batch_records = records[i:i + batch_size]
-                
+                batch_records = records[i : i + batch_size]
+
                 # Time tokenization (subclasses override for custom strategies)
                 t0 = time.perf_counter()
                 encodings = self._prepare_batch_encodings(batch_records)
                 input_ids = encodings["input_ids"].to(device)
                 attention_mask = encodings["attention_mask"].to(device)
                 total_tokenize_ms += (time.perf_counter() - t0) * 1000
-                
+
                 # Time inference
                 t0 = time.perf_counter()
                 outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
@@ -392,26 +402,26 @@ class TransformerClassifier(BaseClassifier):
                 probs = torch.softmax(logits, dim=-1)
                 scores = probs[:, 1].cpu().numpy()
                 total_infer_ms += (time.perf_counter() - t0) * 1000
-                
+
                 all_scores.extend(scores)
 
         return np.array(all_scores), total_tokenize_ms, total_infer_ms
-    
+
     def warmup(self, n_samples: int = 20) -> None:
         """Warmup the model with dummy inference.
-        
+
         Args:
             n_samples: Number of dummy samples to run.
         """
         if not self._is_trained or self.model is None or self.tokenizer is None:
             return
-            
+
         self.model.eval()
         device = next(self.model.parameters()).device
-        
+
         # Create dummy inputs
         dummy_texts = ["This is a warmup text for model inference."] * n_samples
-        
+
         with torch.inference_mode():
             encodings = self.tokenizer(
                 dummy_texts,
@@ -422,7 +432,7 @@ class TransformerClassifier(BaseClassifier):
             )
             input_ids = encodings["input_ids"].to(device)
             attention_mask = encodings["attention_mask"].to(device)
-            
+
             # Run inference
             _ = self.model(input_ids=input_ids, attention_mask=attention_mask)
 
@@ -445,6 +455,7 @@ class TransformerClassifier(BaseClassifier):
         config_to_save = {
             "model_type": "transformer",
             "model_name": self.model_name,
+            "model_revision": self.model_revision,
             "max_length": self.max_length,
             "batch_size": self.batch_size,
             "learning_rate": self.learning_rate,
@@ -462,7 +473,7 @@ class TransformerClassifier(BaseClassifier):
         self.tokenizer.save_pretrained(path / "tokenizer")
 
     @classmethod
-    def load(cls, path: str | Path) -> "TransformerClassifier":
+    def load(cls, path: str | Path) -> TransformerClassifier:
         """Load a model from disk.
 
         Args:
@@ -484,8 +495,14 @@ class TransformerClassifier(BaseClassifier):
         instance = cls(config=config)
 
         # Load model and tokenizer
-        instance.tokenizer = AutoTokenizer.from_pretrained(path / "tokenizer")
-        instance.model = AutoModelForSequenceClassification.from_pretrained(path / "model")
+        instance.tokenizer = AutoTokenizer.from_pretrained(
+            path / "tokenizer",
+            local_files_only=True,
+        )  # nosec B615
+        instance.model = AutoModelForSequenceClassification.from_pretrained(
+            path / "model",
+            local_files_only=True,
+        )  # nosec B615
 
         instance._is_trained = True
         return instance

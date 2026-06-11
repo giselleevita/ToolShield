@@ -15,11 +15,10 @@ import hashlib
 import random
 from collections import Counter
 from pathlib import Path
-from typing import Any
 
 from toolshield.data.schema import AttackFamily, DatasetManifest, DatasetRecord
-from toolshield.data.templates.attack import ATTACK_TEMPLATES, AttackTemplate
-from toolshield.data.templates.benign import BENIGN_TEMPLATES, BenignTemplate
+from toolshield.data.templates.attack import ATTACK_TEMPLATES
+from toolshield.data.templates.benign import BENIGN_TEMPLATES
 from toolshield.data.tools import TOOL_BY_NAME, TOOL_NAMES
 from toolshield.utils.io import save_jsonl, save_manifest
 
@@ -64,10 +63,7 @@ def _generate_benign_records(
 
     for template in BENIGN_TEMPLATES:
         # Determine applicable tools
-        if template.tool_name == "any":
-            applicable_tools = TOOL_NAMES
-        else:
-            applicable_tools = [template.tool_name]
+        applicable_tools = TOOL_NAMES if template.tool_name == "any" else [template.tool_name]
 
         # Generate samples for this template
         n_for_template = samples_per_template
@@ -89,9 +85,7 @@ def _generate_benign_records(
             prompt = variant_fn(rng, tool_name)
 
             # Create record
-            record_id = _deterministic_uuid(
-                seed, template.template_id, variant_id, tool_name, i
-            )
+            record_id = _deterministic_uuid(seed, template.template_id, variant_id, tool_name, i)
 
             record = DatasetRecord(
                 id=f"ben_{record_id}",
@@ -131,8 +125,12 @@ def _generate_attack_records(
         List of DatasetRecord objects for attack prompts.
     """
     records: list[DatasetRecord] = []
-    families = [AttackFamily.AF1.value, AttackFamily.AF2.value,
-                AttackFamily.AF3.value, AttackFamily.AF4.value]
+    families = [
+        AttackFamily.AF1.value,
+        AttackFamily.AF2.value,
+        AttackFamily.AF3.value,
+        AttackFamily.AF4.value,
+    ]
     samples_per_family = n_samples // len(families)
     extra_samples = n_samples - (samples_per_family * len(families))
 
@@ -151,10 +149,7 @@ def _generate_attack_records(
 
         for template in family_templates:
             # Determine applicable tools
-            if template.tool_name == "any":
-                applicable_tools = TOOL_NAMES
-            else:
-                applicable_tools = [template.tool_name]
+            applicable_tools = TOOL_NAMES if template.tool_name == "any" else [template.tool_name]
 
             n_for_template = samples_per_template
             if template_extra > 0:
@@ -235,14 +230,17 @@ def generate_dataset(
     tool_counts = Counter(r.tool_name for r in all_records)
 
     # Template counts by category
-    benign_templates = set(r.template_id for r in all_records if r.is_benign())
-    attack_templates = set(r.template_id for r in all_records if r.is_attack())
+    benign_templates = {r.template_id for r in all_records if r.is_benign()}
+    attack_templates = {r.template_id for r in all_records if r.is_attack()}
 
     manifest = DatasetManifest(
         seed=seed,
         total_records=len(all_records),
         label_counts={str(k): v for k, v in sorted(label_counts.items())},
-        family_counts={str(k) if k else "benign": v for k, v in sorted(family_counts.items(), key=lambda x: str(x[0]))},
+        family_counts={
+            str(k) if k else "benign": v
+            for k, v in sorted(family_counts.items(), key=lambda x: str(x[0]))
+        },
         tool_counts=dict(sorted(tool_counts.items())),
         template_counts={
             "benign": len(benign_templates),

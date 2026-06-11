@@ -53,9 +53,11 @@ STRATEGY_CONFIG_SETS: dict[str, dict[str, Path]] = {
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def load_records(path: Path):
     """Load DatasetRecord objects from a JSONL file."""
     import sys
+
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
     from toolshield.data.schema import DatasetRecord
     from toolshield.utils.io import load_jsonl
@@ -67,6 +69,7 @@ def load_records(path: Path):
 def load_config(path: Path) -> dict:
     """Load YAML config."""
     import yaml
+
     with open(path) as f:
         return yaml.safe_load(f)
 
@@ -74,17 +77,23 @@ def load_config(path: Path) -> dict:
 def make_classifier(config: dict):
     """Instantiate a ContextTransformerClassifier with tokenizer ready."""
     import sys
+
     sys.path.insert(0, str(PROJECT_ROOT / "src"))
-    from toolshield.models.context_transformer import ContextTransformerClassifier
     from transformers import AutoTokenizer
+
+    from toolshield.models.context_transformer import ContextTransformerClassifier
 
     clf = ContextTransformerClassifier(config=config)
     model_name = config.get("model_name", "distilroberta-base")
-    clf.tokenizer = AutoTokenizer.from_pretrained(model_name)
+    clf.tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        revision=config.get("model_revision", "fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b"),
+    )
     return clf
 
 
 # ── Distribution helper ───────────────────────────────────────────────────────
+
 
 def distribution_stats(arr) -> dict[str, float]:
     """Compute min / mean / p95 / max for a numeric array."""
@@ -102,14 +111,14 @@ def distribution_stats(arr) -> dict[str, float]:
 def compute_schema_char_counts(records) -> list[int]:
     """Compute serialised JSON schema length in characters for each record."""
     import json as _json
+
     return [len(_json.dumps(r.tool_schema, separators=(",", ":"))) for r in records]
 
 
 # ── Core ─────────────────────────────────────────────────────────────────────
 
-def compute_stats_for_strategy(
-    strategy: str, config_path: Path, records, protocol: str
-) -> dict:
+
+def compute_stats_for_strategy(strategy: str, config_path: Path, records, protocol: str) -> dict:
     """Compute truncation stats for one (strategy, protocol) pair."""
     config = load_config(config_path)
     clf = make_classifier(config)
@@ -118,8 +127,10 @@ def compute_stats_for_strategy(
 
     # Distribution stats for schema and prompt tokens
     from transformers import AutoTokenizer
+
     tokenizer = AutoTokenizer.from_pretrained(
-        config.get("model_name", "distilroberta-base")
+        config.get("model_name", "distilroberta-base"),
+        revision=config.get("model_revision", "fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b"),
     )
     schema_chars = compute_schema_char_counts(records)
     schema_tokens = compute_schema_token_counts(records, tokenizer)
@@ -154,6 +165,7 @@ def compute_stats_for_strategy(
 def compute_schema_token_counts(records, tokenizer) -> list[int]:
     """Compute the tokenized schema length for each record."""
     import json as _json
+
     counts = []
     for r in records:
         schema_str = _json.dumps(r.tool_schema, separators=(",", ":"))
@@ -163,6 +175,7 @@ def compute_schema_token_counts(records, tokenizer) -> list[int]:
 
 
 # ── Output ───────────────────────────────────────────────────────────────────
+
 
 def build_summary_df(all_stats: list[dict]) -> pd.DataFrame:
     """Build a summary DataFrame from computed stats."""
@@ -189,7 +202,10 @@ def generate_figure(
     """
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
+    tokenizer = AutoTokenizer.from_pretrained(
+        "distilroberta-base",
+        revision="fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b",
+    )
 
     protocols = sorted(set(s["protocol"] for s in all_stats))
     n_protocols = len(protocols)
@@ -282,7 +298,10 @@ def generate_decile_figure(
     """
     from transformers import AutoTokenizer
 
-    tokenizer = AutoTokenizer.from_pretrained("distilroberta-base")
+    tokenizer = AutoTokenizer.from_pretrained(
+        "distilroberta-base",
+        revision="fb53ab8802853c8e4fbdbcd0529f21fc6f459b2b",
+    )
 
     protocols = sorted(set(s["protocol"] for s in all_stats))
     n_protocols = len(protocols)
@@ -307,7 +326,7 @@ def generate_decile_figure(
         for i in range(10):
             lo = int(edges[i])
             hi = int(edges[i + 1])
-            bin_labels.append(f"D{i+1}\n({lo}-{hi})")
+            bin_labels.append(f"D{i + 1}\n({lo}-{hi})")
 
         bin_indices = np.digitize(schema_counts, edges[1:], right=True)  # 0-9
         bin_indices = np.clip(bin_indices, 0, 9)
@@ -367,27 +386,37 @@ def generate_decile_figure(
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Report truncation retention stats")
     parser.add_argument("--protocols", nargs="+", default=DEFAULT_PROTOCOLS)
     parser.add_argument(
-        "--splits-dir", type=Path, default=DATA_DIR / "splits",
+        "--splits-dir",
+        type=Path,
+        default=DATA_DIR / "splits",
         help="Directory containing split protocol subdirs (default: data/splits)",
     )
     parser.add_argument(
-        "--experiment-root", type=Path, default=DATA_DIR / "reports" / "experiments",
+        "--experiment-root",
+        type=Path,
+        default=DATA_DIR / "reports" / "experiments",
         help="Output root for CSV/JSON (default: data/reports/experiments)",
     )
     parser.add_argument(
-        "--figures-dir", type=Path, default=DATA_DIR / "reports" / "figures",
+        "--figures-dir",
+        type=Path,
+        default=DATA_DIR / "reports" / "figures",
         help="Output directory for figures",
     )
     parser.add_argument(
-        "--config-set", choices=list(STRATEGY_CONFIG_SETS.keys()), default="default",
+        "--config-set",
+        choices=list(STRATEGY_CONFIG_SETS.keys()),
+        default="default",
         help="Which config set to use (default or longschema)",
     )
     parser.add_argument(
-        "--figure-suffix", default="",
+        "--figure-suffix",
+        default="",
         help="Suffix for figure filename (e.g., '_longschema')",
     )
     args = parser.parse_args()
@@ -431,10 +460,12 @@ def main() -> None:
 
             # Print quick summary
             s = result["summary"]
-            print(f"    n_samples={s['n_samples']}, "
-                  f"prompt_truncated={s['n_prompt_truncated']} "
-                  f"({s['pct_prompt_truncated']*100:.1f}%), "
-                  f"retention_mean={s['prompt_retention_ratio_mean']:.3f}")
+            print(
+                f"    n_samples={s['n_samples']}, "
+                f"prompt_truncated={s['n_prompt_truncated']} "
+                f"({s['pct_prompt_truncated'] * 100:.1f}%), "
+                f"retention_mean={s['prompt_retention_ratio_mean']:.3f}"
+            )
 
     if not all_stats:
         print("No stats computed — check splits exist.")
@@ -456,10 +487,7 @@ def main() -> None:
             "strategy": s["strategy"],
             "summary": s["summary"],
             "distributions": s.get("distributions", {}),
-            "per_sample": {
-                k: [float(v) for v in vals]
-                for k, vals in s["per_sample"].items()
-            },
+            "per_sample": {k: [float(v) for v in vals] for k, vals in s["per_sample"].items()},
         }
         json_data.append(entry)
     with open(json_path, "w") as f:
@@ -469,13 +497,13 @@ def main() -> None:
     # Generate quartile figure
     fig_name = f"truncation_bias_prompt_retention_vs_schema{args.figure_suffix}.png"
     fig_path = figures_dir / fig_name
-    print(f"\n  Generating quartile figure...")
+    print("\n  Generating quartile figure...")
     generate_figure(all_stats, all_records, fig_path)
 
     # Generate decile figure
     decile_fig_name = f"truncation_bias_prompt_retention_vs_schema_deciles{args.figure_suffix}.png"
     decile_fig_path = figures_dir / decile_fig_name
-    print(f"  Generating decile figure...")
+    print("  Generating decile figure...")
     generate_decile_figure(all_stats, all_records, decile_fig_path)
 
     print("\nDone.")

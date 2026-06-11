@@ -14,8 +14,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pytest
-
 PROJECT_ROOT = Path(__file__).parent.parent
 SCRIPT = PROJECT_ROOT / "scripts" / "verify_experiments_longschema_bundle.py"
 
@@ -38,13 +36,15 @@ def write_summary_csv(root: Path, *, roc_override: dict[str, float] | None = Non
         for model in MODELS:
             default_roc = 0.998 if "keep_prompt" in model else 0.45
             roc = roc_override.get(model, default_roc) if roc_override else default_roc
-            rows.append({
-                "protocol": protocol,
-                "model": model,
-                "n_seeds": "3",
-                "roc_auc_mean": str(roc),
-                "roc_auc_std": "0.001",
-            })
+            rows.append(
+                {
+                    "protocol": protocol,
+                    "model": model,
+                    "n_seeds": "3",
+                    "roc_auc_mean": str(roc),
+                    "roc_auc_std": "0.001",
+                }
+            )
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -62,25 +62,32 @@ def write_truncation_stats_csv(
     """Write a valid truncation_stats.csv."""
     path = root / "truncation_stats.csv"
     fieldnames = [
-        "protocol", "strategy", "n_samples",
-        "pct_prompt_truncated", "prompt_retention_ratio_mean",
+        "protocol",
+        "strategy",
+        "n_samples",
+        "pct_prompt_truncated",
+        "prompt_retention_ratio_mean",
     ]
     rows = []
     for protocol in PROTOCOLS:
-        rows.append({
-            "protocol": protocol,
-            "strategy": "naive",
-            "n_samples": "224",
-            "pct_prompt_truncated": str(naive_pct),
-            "prompt_retention_ratio_mean": str(naive_retention),
-        })
-        rows.append({
-            "protocol": protocol,
-            "strategy": "keep_prompt",
-            "n_samples": "224",
-            "pct_prompt_truncated": str(kp_pct),
-            "prompt_retention_ratio_mean": str(kp_retention),
-        })
+        rows.append(
+            {
+                "protocol": protocol,
+                "strategy": "naive",
+                "n_samples": "224",
+                "pct_prompt_truncated": str(naive_pct),
+                "prompt_retention_ratio_mean": str(naive_retention),
+            }
+        )
+        rows.append(
+            {
+                "protocol": protocol,
+                "strategy": "keep_prompt",
+                "n_samples": "224",
+                "pct_prompt_truncated": str(kp_pct),
+                "prompt_retention_ratio_mean": str(kp_retention),
+            }
+        )
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
@@ -145,9 +152,15 @@ def run_verifier(root: Path) -> subprocess.CompletedProcess[str]:
         [
             sys.executable,
             str(SCRIPT),
-            "--root", str(root),
-            "--expect-seeds", "0", "1", "2",
-            "--protocols", "S_random", "S_attack_holdout",
+            "--root",
+            str(root),
+            "--expect-seeds",
+            "0",
+            "1",
+            "2",
+            "--protocols",
+            "S_random",
+            "S_attack_holdout",
         ],
         capture_output=True,
         text=True,
@@ -171,7 +184,7 @@ class TestVerifierPassesOnValidFixtures:
         root = tmp_path / "experiments"
         build_full_fixture(root)
         result = run_verifier(root)
-        ok_lines = [l for l in result.stdout.splitlines() if l.startswith("[OK]")]
+        ok_lines = [line for line in result.stdout.splitlines() if line.startswith("[OK]")]
         assert len(ok_lines) == 5, f"Expected 5 OK lines, got {len(ok_lines)}: {ok_lines}"
 
 
@@ -281,10 +294,13 @@ class TestVerifierFailsOnROCAUCRegression:
     def test_keep_prompt_low_roc(self, tmp_path: Path):
         root = tmp_path / "experiments"
         build_full_fixture(root)
-        write_summary_csv(root, roc_override={
-            "context_transformer_keep_prompt_longschema": 0.80,
-            "context_transformer_naive_longschema": 0.45,
-        })
+        write_summary_csv(
+            root,
+            roc_override={
+                "context_transformer_keep_prompt_longschema": 0.80,
+                "context_transformer_naive_longschema": 0.45,
+            },
+        )
         result = run_verifier(root)
         assert result.returncode == 1
         assert "roc_auc_mean" in result.stderr
@@ -292,10 +308,13 @@ class TestVerifierFailsOnROCAUCRegression:
     def test_naive_high_roc(self, tmp_path: Path):
         root = tmp_path / "experiments"
         build_full_fixture(root)
-        write_summary_csv(root, roc_override={
-            "context_transformer_keep_prompt_longschema": 0.998,
-            "context_transformer_naive_longschema": 0.75,
-        })
+        write_summary_csv(
+            root,
+            roc_override={
+                "context_transformer_keep_prompt_longschema": 0.998,
+                "context_transformer_naive_longschema": 0.75,
+            },
+        )
         result = run_verifier(root)
         assert result.returncode == 1
         assert "roc_auc_mean" in result.stderr

@@ -32,56 +32,164 @@ PROJECT_ROOT = Path(__file__).parent.parent
 
 ENTERPRISE_PROPERTIES = [
     ("auditTrailId", "string", "UUID for compliance audit trail tracking and SOX reporting"),
-    ("correlationId", "string", "Distributed tracing correlation ID for cross-service request tracking"),
-    ("requestedBy", "string", "Principal identity (email or service account) initiating the request"),
-    ("approvedBy", "string", "Manager or security officer who approved this operation, required for privileged actions"),
-    ("departmentCode", "string", "Organizational unit code for cost allocation and access control (e.g., 'ENG-042')"),
+    (
+        "correlationId",
+        "string",
+        "Distributed tracing correlation ID for cross-service request tracking",
+    ),
+    (
+        "requestedBy",
+        "string",
+        "Principal identity (email or service account) initiating the request",
+    ),
+    (
+        "approvedBy",
+        "string",
+        "Manager or security officer who approved this operation, required for privileged actions",
+    ),
+    (
+        "departmentCode",
+        "string",
+        "Organizational unit code for cost allocation and access control (e.g., 'ENG-042')",
+    ),
     ("costCenter", "string", "Financial cost center code for billing and chargeback purposes"),
-    ("environmentId", "string", "Deployment environment identifier: production, staging, development, sandbox"),
+    (
+        "environmentId",
+        "string",
+        "Deployment environment identifier: production, staging, development, sandbox",
+    ),
     ("tenantId", "string", "Multi-tenant isolation identifier for SaaS deployments"),
-    ("regionCode", "string", "Geographic region code for data residency compliance (e.g., 'eu-west-1', 'us-east-2')"),
-    ("dataClassification", "string", "Data sensitivity label: public, internal, confidential, restricted, top-secret"),
+    (
+        "regionCode",
+        "string",
+        "Geographic region code for data residency compliance (e.g., 'eu-west-1', 'us-east-2')",
+    ),
+    (
+        "dataClassification",
+        "string",
+        "Data sensitivity label: public, internal, confidential, restricted, top-secret",
+    ),
     ("retentionPolicyId", "string", "Data retention policy identifier for GDPR/CCPA compliance"),
     ("encryptionKeyId", "string", "KMS encryption key identifier for data-at-rest encryption"),
-    ("accessLevel", "string", "Required RBAC access level: viewer, editor, admin, superadmin, owner"),
-    ("mfaVerified", "boolean", "Whether multi-factor authentication was completed for this request"),
+    (
+        "accessLevel",
+        "string",
+        "Required RBAC access level: viewer, editor, admin, superadmin, owner",
+    ),
+    (
+        "mfaVerified",
+        "boolean",
+        "Whether multi-factor authentication was completed for this request",
+    ),
     ("sessionToken", "string", "Ephemeral session token from identity provider (JWT or opaque)"),
-    ("idempotencyKey", "string", "Client-generated idempotency key for safe retry of mutating operations"),
-    ("rateLimitGroup", "string", "Rate limiting group identifier for throttling and quota management"),
-    ("priorityLevel", "integer", "Request priority for queue ordering: 0 (critical) to 9 (background)"),
+    (
+        "idempotencyKey",
+        "string",
+        "Client-generated idempotency key for safe retry of mutating operations",
+    ),
+    (
+        "rateLimitGroup",
+        "string",
+        "Rate limiting group identifier for throttling and quota management",
+    ),
+    (
+        "priorityLevel",
+        "integer",
+        "Request priority for queue ordering: 0 (critical) to 9 (background)",
+    ),
     ("callbackUrl", "string", "Webhook URL for asynchronous operation completion notification"),
-    ("timeoutSeconds", "integer", "Maximum execution timeout in seconds before automatic cancellation"),
+    (
+        "timeoutSeconds",
+        "integer",
+        "Maximum execution timeout in seconds before automatic cancellation",
+    ),
     ("paginationToken", "string", "Opaque cursor token for resuming paginated result sets"),
     ("pageSize", "integer", "Number of results per page for paginated queries (max 1000)"),
     ("sortField", "string", "Field name to sort results by, must be an indexed column"),
     ("sortOrder", "string", "Sort direction: ascending or descending, defaults to ascending"),
-    ("filterExpression", "string", "OData-style filter expression for server-side result filtering"),
+    (
+        "filterExpression",
+        "string",
+        "OData-style filter expression for server-side result filtering",
+    ),
     ("includeDeleted", "boolean", "Whether to include soft-deleted records in the response"),
     ("expandRelations", "string", "Comma-separated list of related entities to eagerly load"),
-    ("fieldsProjection", "string", "Comma-separated list of fields to include in response (sparse fieldset)"),
+    (
+        "fieldsProjection",
+        "string",
+        "Comma-separated list of fields to include in response (sparse fieldset)",
+    ),
     ("locale", "string", "BCP-47 locale tag for response localisation (e.g., 'en-US', 'de-DE')"),
-    ("timezone", "string", "IANA timezone identifier for date/time interpretation (e.g., 'Europe/Berlin')"),
+    (
+        "timezone",
+        "string",
+        "IANA timezone identifier for date/time interpretation (e.g., 'Europe/Berlin')",
+    ),
     ("dryRun", "boolean", "If true, validate the request without executing side effects"),
     ("webhookSecret", "string", "HMAC secret for signing webhook payloads to prevent tampering"),
-    ("complianceFlags", "string", "Comma-separated compliance framework tags: SOC2, HIPAA, PCI-DSS, ISO27001"),
-    ("changeTicketId", "string", "ITSM change management ticket reference for production modifications"),
-    ("rollbackEnabled", "boolean", "Whether automatic rollback is enabled if operation fails validation"),
+    (
+        "complianceFlags",
+        "string",
+        "Comma-separated compliance framework tags: SOC2, HIPAA, PCI-DSS, ISO27001",
+    ),
+    (
+        "changeTicketId",
+        "string",
+        "ITSM change management ticket reference for production modifications",
+    ),
+    (
+        "rollbackEnabled",
+        "boolean",
+        "Whether automatic rollback is enabled if operation fails validation",
+    ),
     ("batchId", "string", "Batch processing group identifier for bulk operations"),
     ("parentOperationId", "string", "Reference to parent operation for hierarchical audit trails"),
-    ("notificationChannels", "string", "Comma-separated notification channels: email, slack, pagerduty, teams"),
-    ("customMetadata", "object", "Free-form key-value metadata for customer-specific extensions and integrations"),
-    ("sourceSystem", "string", "Originating system identifier for cross-platform data lineage tracking"),
+    (
+        "notificationChannels",
+        "string",
+        "Comma-separated notification channels: email, slack, pagerduty, teams",
+    ),
+    (
+        "customMetadata",
+        "object",
+        "Free-form key-value metadata for customer-specific extensions and integrations",
+    ),
+    (
+        "sourceSystem",
+        "string",
+        "Originating system identifier for cross-platform data lineage tracking",
+    ),
     ("targetSystem", "string", "Destination system identifier for data synchronisation operations"),
-    ("schemaVersion", "string", "API schema version for backward compatibility negotiation (semver)"),
-    ("featureFlags", "string", "Comma-separated feature flag identifiers controlling experimental behaviour"),
+    (
+        "schemaVersion",
+        "string",
+        "API schema version for backward compatibility negotiation (semver)",
+    ),
+    (
+        "featureFlags",
+        "string",
+        "Comma-separated feature flag identifiers controlling experimental behaviour",
+    ),
     ("quotaProject", "string", "Project identifier for resource quota tracking and enforcement"),
     ("billingAccount", "string", "Billing account reference for usage-based pricing and invoicing"),
-    ("serviceLevelObjective", "string", "SLO identifier for performance monitoring and alerting thresholds"),
+    (
+        "serviceLevelObjective",
+        "string",
+        "SLO identifier for performance monitoring and alerting thresholds",
+    ),
     ("retryPolicy", "string", "Retry policy identifier: exponential-backoff, linear, none"),
     ("maxRetries", "integer", "Maximum number of automatic retry attempts before failure"),
     ("circuitBreakerId", "string", "Circuit breaker configuration identifier for fault tolerance"),
-    ("cacheTtlSeconds", "integer", "Time-to-live for response caching in seconds, 0 disables caching"),
-    ("etagVersion", "string", "Entity tag for optimistic concurrency control and conditional requests"),
+    (
+        "cacheTtlSeconds",
+        "integer",
+        "Time-to-live for response caching in seconds, 0 disables caching",
+    ),
+    (
+        "etagVersion",
+        "string",
+        "Entity tag for optimistic concurrency control and conditional requests",
+    ),
     ("acceptEncoding", "string", "Preferred response encoding: gzip, br, zstd, identity"),
 ]
 
@@ -137,14 +245,16 @@ def inflate_schema(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Inflate tool schemas to enterprise length")
-    parser.add_argument("--input", type=Path,
-                        default=PROJECT_ROOT / "data" / "dataset.jsonl")
-    parser.add_argument("--output", type=Path,
-                        default=PROJECT_ROOT / "data" / "dataset_longschema.jsonl")
-    parser.add_argument("--target-chars", type=int, default=4000,
-                        help="Target schema JSON length in characters")
-    parser.add_argument("--seed", type=int, default=1337,
-                        help="Base seed for deterministic inflation")
+    parser.add_argument("--input", type=Path, default=PROJECT_ROOT / "data" / "dataset.jsonl")
+    parser.add_argument(
+        "--output", type=Path, default=PROJECT_ROOT / "data" / "dataset_longschema.jsonl"
+    )
+    parser.add_argument(
+        "--target-chars", type=int, default=4000, help="Target schema JSON length in characters"
+    )
+    parser.add_argument(
+        "--seed", type=int, default=1337, help="Base seed for deterministic inflation"
+    )
     args = parser.parse_args()
 
     if not args.input.exists():
@@ -180,11 +290,14 @@ def main() -> None:
             count += 1
 
     import statistics
+
     print(f"\nInflated {count} records")
-    print(f"Schema length: min={min(schema_lengths)}, "
-          f"median={statistics.median(schema_lengths):.0f}, "
-          f"max={max(schema_lengths)}, "
-          f"mean={statistics.mean(schema_lengths):.0f}")
+    print(
+        f"Schema length: min={min(schema_lengths)}, "
+        f"median={statistics.median(schema_lengths):.0f}, "
+        f"max={max(schema_lengths)}, "
+        f"mean={statistics.mean(schema_lengths):.0f}"
+    )
     print(f"Saved: {args.output}")
 
 

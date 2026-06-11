@@ -81,6 +81,7 @@ DEFAULT_EXPERIMENT_TAG = "experiments"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 @dataclass
 class RunResult:
     seed: int
@@ -142,6 +143,7 @@ def run_command(cmd: list[str], description: str) -> tuple[bool, str]:
 
 # ── Train + eval ─────────────────────────────────────────────────────────────
 
+
 def train_model(
     seed: int, protocol: str, model_name: str, cli_model: str, config_path: Path
 ) -> tuple[bool, str]:
@@ -150,11 +152,18 @@ def train_model(
     split_dir = get_split_dir(protocol)
 
     cmd = [
-        sys.executable, "-m", "toolshield.cli", "train",
-        "--model", cli_model,
-        "--split", str(split_dir),
-        "--output", str(model_dir),
-        "--config", str(config_path),
+        sys.executable,
+        "-m",
+        "toolshield.cli",
+        "train",
+        "--model",
+        cli_model,
+        "--split",
+        str(split_dir),
+        "--output",
+        str(model_dir),
+        "--config",
+        str(config_path),
     ]
     return run_command(cmd, f"Train {model_name}")
 
@@ -165,18 +174,28 @@ def evaluate_model(seed: int, protocol: str, model_name: str) -> tuple[bool, str
     metrics_path = get_metrics_path(seed, protocol, model_name)
 
     cmd = [
-        sys.executable, "-m", "toolshield.cli", "eval",
-        "--model", str(model_dir),
-        "--test", str(split_dir / "test.jsonl"),
-        "--val", str(split_dir / "val.jsonl"),
-        "--output", str(metrics_path),
-        "--latency-mode", "warm",
+        sys.executable,
+        "-m",
+        "toolshield.cli",
+        "eval",
+        "--model",
+        str(model_dir),
+        "--test",
+        str(split_dir / "test.jsonl"),
+        "--val",
+        str(split_dir / "val.jsonl"),
+        "--output",
+        str(metrics_path),
+        "--latency-mode",
+        "warm",
     ]
     return run_command(cmd, f"Eval {model_name}")
 
 
 def run_single(
-    seed: int, protocol: str, model_name: str,
+    seed: int,
+    protocol: str,
+    model_name: str,
     ablation_models: dict[str, tuple[str, Path]],
     force: bool = False,
 ) -> RunResult:
@@ -189,7 +208,10 @@ def run_single(
     # Ensure splits
     if not splits_exist(protocol):
         return RunResult(
-            seed, protocol, model_name, "failed",
+            seed,
+            protocol,
+            model_name,
+            "failed",
             error="Splits not found — run make splits first",
         )
 
@@ -200,7 +222,10 @@ def run_single(
         ok, out = train_model(seed, protocol, model_name, cli_model, config_path)
         if not ok:
             return RunResult(
-                seed, protocol, model_name, "failed",
+                seed,
+                protocol,
+                model_name,
+                "failed",
                 duration_s=time.time() - start,
                 error=f"Training failed: {out[:500]}",
             )
@@ -209,18 +234,25 @@ def run_single(
     ok, out = evaluate_model(seed, protocol, model_name)
     if not ok:
         return RunResult(
-            seed, protocol, model_name, "failed",
+            seed,
+            protocol,
+            model_name,
+            "failed",
             duration_s=time.time() - start,
             error=f"Evaluation failed: {out[:500]}",
         )
 
     return RunResult(
-        seed, protocol, model_name, "success",
+        seed,
+        protocol,
+        model_name,
+        "success",
         duration_s=time.time() - start,
     )
 
 
 # ── Completeness report ─────────────────────────────────────────────────────
+
 
 def print_report(results: list[RunResult]) -> None:
     table = Table(title="Truncation Ablation — Completeness Report")
@@ -239,11 +271,9 @@ def print_report(results: list[RunResult]) -> None:
             status_str = "[yellow]skipped[/yellow]"
             n_skip += 1
         else:
-            status_str = f"[red]failed[/red]"
+            status_str = "[red]failed[/red]"
             n_fail += 1
-        table.add_row(
-            str(r.seed), r.protocol, r.model, status_str, f"{r.duration_s:.1f}"
-        )
+        table.add_row(str(r.seed), r.protocol, r.model, status_str, f"{r.duration_s:.1f}")
 
     console.print(table)
     total = len(results)
@@ -262,6 +292,7 @@ def print_report(results: list[RunResult]) -> None:
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     global _splits_dir, _experiments_dir
 
@@ -271,15 +302,20 @@ def main() -> None:
     parser.add_argument("--force", action="store_true", help="Re-run even if results exist")
     parser.add_argument("--skip-aggregate", action="store_true", help="Skip final aggregation step")
     parser.add_argument(
-        "--experiment-tag", default=DEFAULT_EXPERIMENT_TAG,
+        "--experiment-tag",
+        default=DEFAULT_EXPERIMENT_TAG,
         help="Experiment output folder name under data/reports/ (default: experiments)",
     )
     parser.add_argument(
-        "--splits-dir", type=Path, default=None,
+        "--splits-dir",
+        type=Path,
+        default=None,
         help="Custom splits directory (default: data/splits)",
     )
     parser.add_argument(
-        "--model-set", choices=list(ABLATION_MODEL_SETS.keys()), default="default",
+        "--model-set",
+        choices=list(ABLATION_MODEL_SETS.keys()),
+        default="default",
         help="Which model config set to use (default or longschema)",
     )
     args = parser.parse_args()
@@ -317,11 +353,17 @@ def main() -> None:
 
                 # Print inline progress
                 if r.status == "success":
-                    console.print(f"  [green]✓[/green] seed={seed}, {protocol}/{model_name} ({r.duration_s:.1f}s)")
+                    console.print(
+                        f"  [green]✓[/green] seed={seed}, {protocol}/{model_name} ({r.duration_s:.1f}s)"
+                    )
                 elif r.status == "skipped":
-                    console.print(f"  [yellow]–[/yellow] seed={seed}, {protocol}/{model_name} (skipped)")
+                    console.print(
+                        f"  [yellow]–[/yellow] seed={seed}, {protocol}/{model_name} (skipped)"
+                    )
                 else:
-                    console.print(f"  [red]✗[/red] seed={seed}, {protocol}/{model_name}: {r.error[:120] if r.error else ''}")
+                    console.print(
+                        f"  [red]✗[/red] seed={seed}, {protocol}/{model_name}: {r.error[:120] if r.error else ''}"
+                    )
 
     print_report(results)
 
@@ -329,10 +371,15 @@ def main() -> None:
     if not args.skip_aggregate:
         console.print("\n[bold]Aggregating results...[/bold]")
         ok, out = run_command(
-            [sys.executable, str(PROJECT_ROOT / "scripts" / "aggregate_experiments.py"),
-             "--verbose",
-             "--reports-dir", str(_experiments_dir),
-             "--output-dir", str(_experiments_dir)],
+            [
+                sys.executable,
+                str(PROJECT_ROOT / "scripts" / "aggregate_experiments.py"),
+                "--verbose",
+                "--reports-dir",
+                str(_experiments_dir),
+                "--output-dir",
+                str(_experiments_dir),
+            ],
             "Aggregate",
         )
         if ok:

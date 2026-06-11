@@ -6,12 +6,12 @@ import pytest
 from pydantic import ValidationError
 
 from toolshield.data.schema import (
+    UNSAFE_GOALS,
     AttackFamily,
     AttackGoal,
     DatasetManifest,
     DatasetRecord,
     SplitManifest,
-    UNSAFE_GOALS,
 )
 
 
@@ -87,7 +87,7 @@ class TestDatasetRecord:
             "tool_hijack",
             "privilege_misuse",
         }
-        assert UNSAFE_GOALS == expected_goals
+        assert expected_goals == UNSAFE_GOALS
 
 
 class TestAttackEnums:

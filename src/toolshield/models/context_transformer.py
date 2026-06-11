@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 
 # ── Token retention statistics ───────────────────────────────────────────────
 
+
 @dataclass
 class TruncationStats:
     """Token retention statistics for a set of records.
@@ -52,18 +53,18 @@ class TruncationStats:
     """
 
     n_samples: int
-    prompt_tokens_total: list[int]       # raw prompt token counts per sample
-    prompt_tokens_retained: list[int]    # prompt tokens after truncation
-    context_tokens_total: list[int]      # raw context token counts per sample
-    context_tokens_retained: list[int]   # context tokens after truncation
-    n_prompt_truncated: int              # samples where prompt was clipped
+    prompt_tokens_total: list[int]  # raw prompt token counts per sample
+    prompt_tokens_retained: list[int]  # prompt tokens after truncation
+    context_tokens_total: list[int]  # raw context token counts per sample
+    context_tokens_retained: list[int]  # context tokens after truncation
+    n_prompt_truncated: int  # samples where prompt was clipped
 
     @property
     def prompt_retention_ratio(self) -> list[float]:
         """Per-sample ratio of retained / total prompt tokens."""
         return [
             r / t if t > 0 else 1.0
-            for r, t in zip(self.prompt_tokens_retained, self.prompt_tokens_total)
+            for r, t in zip(self.prompt_tokens_retained, self.prompt_tokens_total, strict=False)
         ]
 
     def summary(self) -> dict[str, float]:
@@ -88,6 +89,7 @@ class TruncationStats:
 
 
 # ── Prompt-preserving dataset ───────────────────────────────────────────────
+
 
 class PromptPreservingDataset(TorchDataset):
     """PyTorch Dataset with prompt-preserving truncation.
@@ -133,9 +135,9 @@ class PromptPreservingDataset(TorchDataset):
         self.prompt_side = prompt_side
 
         # Cache special token IDs
-        self.bos_id = tokenizer.bos_token_id   # <s>
-        self.eos_id = tokenizer.eos_token_id   # </s>
-        self.pad_id = tokenizer.pad_token_id   # <pad>
+        self.bos_id = tokenizer.bos_token_id  # <s>
+        self.eos_id = tokenizer.eos_token_id  # </s>
+        self.pad_id = tokenizer.pad_token_id  # <pad>
 
     def __len__(self) -> int:
         return len(self.prompts)
@@ -190,11 +192,7 @@ class PromptPreservingDataset(TorchDataset):
 
         # Assemble: <s> context </s></s> prompt </s>
         input_ids = (
-            [self.bos_id]
-            + context_ids
-            + [self.eos_id, self.eos_id]
-            + prompt_ids
-            + [self.eos_id]
+            [self.bos_id] + context_ids + [self.eos_id, self.eos_id] + prompt_ids + [self.eos_id]
         )
 
         # Pad to max_length
@@ -205,18 +203,19 @@ class PromptPreservingDataset(TorchDataset):
             attention_mask = attention_mask + [0] * pad_len
 
         return (
-            input_ids, attention_mask,
-            prompt_total, prompt_retained,
-            context_total, context_retained,
+            input_ids,
+            attention_mask,
+            prompt_total,
+            prompt_retained,
+            context_total,
+            context_retained,
         )
 
     def __getitem__(self, idx: int) -> dict[str, Any]:
         context = self.contexts[idx]
         prompt = self.prompts[idx]
 
-        input_ids, attention_mask, _, _, _, _ = self._allocate_and_build(
-            context, prompt
-        )
+        input_ids, attention_mask, _, _, _, _ = self._allocate_and_build(context, prompt)
 
         item = {
             "input_ids": torch.tensor(input_ids, dtype=torch.long),
@@ -230,6 +229,7 @@ class PromptPreservingDataset(TorchDataset):
 
 
 # ── Context transformer classifier ──────────────────────────────────────────
+
 
 class ContextTransformerClassifier(TransformerClassifier):
     """Context-augmented transformer with configurable truncation strategy.
@@ -531,7 +531,7 @@ class ContextTransformerClassifier(TransformerClassifier):
         self.tokenizer.save_pretrained(path / "tokenizer")
 
     @classmethod
-    def load(cls, path: str | Path) -> "ContextTransformerClassifier":
+    def load(cls, path: str | Path) -> ContextTransformerClassifier:
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
         path = Path(path)
@@ -543,10 +543,12 @@ class ContextTransformerClassifier(TransformerClassifier):
 
         instance = cls(config=config)
 
-        instance.tokenizer = AutoTokenizer.from_pretrained(path / "tokenizer")
+        instance.tokenizer = AutoTokenizer.from_pretrained(
+            path / "tokenizer", local_files_only=True
+        )  # nosec B615
         instance.model = AutoModelForSequenceClassification.from_pretrained(
-            path / "model"
-        )
+            path / "model", local_files_only=True
+        )  # nosec B615
 
         instance._is_trained = True
         return instance

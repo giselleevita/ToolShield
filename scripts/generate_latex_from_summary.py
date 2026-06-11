@@ -5,8 +5,9 @@ Usage:
     python scripts/generate_latex_from_summary.py > data/reports/latex_tables.txt
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 
 def format_metric(mean: float, std: float, precision: int = 3) -> str:
@@ -19,13 +20,13 @@ def format_metric(mean: float, std: float, precision: int = 3) -> str:
 def format_percent(mean: float, std: float = 0.0) -> str:
     """Format as percentage."""
     if std > 0.001:
-        return f"{mean*100:.1f}$\\pm${std*100:.1f}\\%"
-    return f"{mean*100:.1f}\\%"
+        return f"{mean * 100:.1f}$\\pm${std * 100:.1f}\\%"
+    return f"{mean * 100:.1f}\\%"
 
 
 def generate_main_results_table(df: pd.DataFrame) -> str:
     """Generate main results table (Table 1)."""
-    
+
     lines = [
         "% Table 1: Main Results - Model Performance Across Split Protocols",
         "\\begin{table}[htbp]",
@@ -37,35 +38,37 @@ def generate_main_results_table(df: pd.DataFrame) -> str:
         "Protocol & Model & ROC-AUC & PR-AUC & FPR@TPR90 & FPR@TPR95 \\\\",
         "\\midrule",
     ]
-    
-    for protocol in df['protocol'].unique():
-        protocol_df = df[df['protocol'] == protocol]
+
+    for protocol in df["protocol"].unique():
+        protocol_df = df[df["protocol"] == protocol]
         for _, row in protocol_df.iterrows():
-            model = row['model'].replace('_', '\\_')
-            roc = format_metric(row['roc_auc_mean'], row['roc_auc_std'])
-            pr = format_metric(row['pr_auc_mean'], row['pr_auc_std'])
-            fpr90 = format_metric(row['fpr_at_tpr_90_mean'], row['fpr_at_tpr_90_std'])
-            fpr95 = format_metric(row['fpr_at_tpr_95_mean'], row['fpr_at_tpr_95_std'])
-            
-            prot_display = protocol.replace('_', '\\_')
+            model = row["model"].replace("_", "\\_")
+            roc = format_metric(row["roc_auc_mean"], row["roc_auc_std"])
+            pr = format_metric(row["pr_auc_mean"], row["pr_auc_std"])
+            fpr90 = format_metric(row["fpr_at_tpr_90_mean"], row["fpr_at_tpr_90_std"])
+            fpr95 = format_metric(row["fpr_at_tpr_95_mean"], row["fpr_at_tpr_95_std"])
+
+            prot_display = protocol.replace("_", "\\_")
             lines.append(f"{prot_display} & {model} & {roc} & {pr} & {fpr90} & {fpr95} \\\\")
         lines.append("\\midrule")
-    
+
     # Remove last midrule
     lines[-1] = "\\bottomrule"
-    
-    lines.extend([
-        "\\end{tabular}",
-        "\\end{table}",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
     return "\n".join(lines)
 
 
 def generate_asr_table(df: pd.DataFrame) -> str:
     """Generate ASR reduction table (Table 2)."""
-    
+
     lines = [
         "% Table 2: Attack Success Rate (ASR) Reduction",
         "\\begin{table}[htbp]",
@@ -77,32 +80,34 @@ def generate_asr_table(df: pd.DataFrame) -> str:
         "Protocol & Model & ASR Red.@TPR90 & ASR Red.@TPR95 \\\\",
         "\\midrule",
     ]
-    
-    for protocol in df['protocol'].unique():
-        protocol_df = df[df['protocol'] == protocol]
+
+    for protocol in df["protocol"].unique():
+        protocol_df = df[df["protocol"] == protocol]
         for _, row in protocol_df.iterrows():
-            model = row['model'].replace('_', '\\_')
-            asr90 = format_percent(row['asr_reduction_90_mean'], row.get('asr_reduction_90_std', 0))
-            asr95 = format_percent(row['asr_reduction_95_mean'], row.get('asr_reduction_95_std', 0))
-            
-            prot_display = protocol.replace('_', '\\_')
+            model = row["model"].replace("_", "\\_")
+            asr90 = format_percent(row["asr_reduction_90_mean"], row.get("asr_reduction_90_std", 0))
+            asr95 = format_percent(row["asr_reduction_95_mean"], row.get("asr_reduction_95_std", 0))
+
+            prot_display = protocol.replace("_", "\\_")
             lines.append(f"{prot_display} & {model} & {asr90} & {asr95} \\\\")
         lines.append("\\midrule")
-    
+
     lines[-1] = "\\bottomrule"
-    
-    lines.extend([
-        "\\end{tabular}",
-        "\\end{table}",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
     return "\n".join(lines)
 
 
 def generate_budget_table(df: pd.DataFrame) -> str:
     """Generate budget evaluation table (Table 3)."""
-    
+
     lines = [
         "% Table 3: Budget-Based Evaluation (Threshold Selected on Validation)",
         "\\begin{table}[htbp]",
@@ -114,34 +119,36 @@ def generate_budget_table(df: pd.DataFrame) -> str:
         "Protocol & Model & TPR@1\\% & TPR@3\\% & TPR@5\\% \\\\",
         "\\midrule",
     ]
-    
-    for protocol in df['protocol'].unique():
-        protocol_df = df[df['protocol'] == protocol]
+
+    for protocol in df["protocol"].unique():
+        protocol_df = df[df["protocol"] == protocol]
         for _, row in protocol_df.iterrows():
-            model = row['model'].replace('_', '\\_')
-            
-            tpr1 = format_percent(row.get('budget_1_tpr_mean', 0), row.get('budget_1_tpr_std', 0))
-            tpr3 = format_percent(row.get('budget_3_tpr_mean', 0), row.get('budget_3_tpr_std', 0))
-            tpr5 = format_percent(row.get('budget_5_tpr_mean', 0), row.get('budget_5_tpr_std', 0))
-            
-            prot_display = protocol.replace('_', '\\_')
+            model = row["model"].replace("_", "\\_")
+
+            tpr1 = format_percent(row.get("budget_1_tpr_mean", 0), row.get("budget_1_tpr_std", 0))
+            tpr3 = format_percent(row.get("budget_3_tpr_mean", 0), row.get("budget_3_tpr_std", 0))
+            tpr5 = format_percent(row.get("budget_5_tpr_mean", 0), row.get("budget_5_tpr_std", 0))
+
+            prot_display = protocol.replace("_", "\\_")
             lines.append(f"{prot_display} & {model} & {tpr1} & {tpr3} & {tpr5} \\\\")
         lines.append("\\midrule")
-    
+
     lines[-1] = "\\bottomrule"
-    
-    lines.extend([
-        "\\end{tabular}",
-        "\\end{table}",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
     return "\n".join(lines)
 
 
 def generate_latency_table(df: pd.DataFrame) -> str:
     """Generate latency table (Table 4)."""
-    
+
     lines = [
         "% Table 4: Inference Latency",
         "\\begin{table}[htbp]",
@@ -153,35 +160,37 @@ def generate_latency_table(df: pd.DataFrame) -> str:
         "Model & P50 (ms) & P95 (ms) \\\\",
         "\\midrule",
     ]
-    
+
     # Get unique models
     seen_models = set()
     for _, row in df.iterrows():
-        model = row['model']
+        model = row["model"]
         if model in seen_models:
             continue
         seen_models.add(model)
-        
-        model_display = model.replace('_', '\\_')
+
+        model_display = model.replace("_", "\\_")
         p50 = f"{row.get('latency_p50_ms_mean', 0):.2f}"
         p95 = f"{row.get('latency_p95_ms_mean', 0):.2f}"
-        
+
         lines.append(f"{model_display} & {p50} & {p95} \\\\")
-    
+
     lines.append("\\bottomrule")
-    
-    lines.extend([
-        "\\end{tabular}",
-        "\\end{table}",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
     return "\n".join(lines)
 
 
 def generate_generalization_gap_table(df: pd.DataFrame) -> str:
     """Generate generalization gap comparison."""
-    
+
     lines = [
         "% Table 5: Generalization Gap (S_random vs S_attack_holdout)",
         "\\begin{table}[htbp]",
@@ -193,27 +202,31 @@ def generate_generalization_gap_table(df: pd.DataFrame) -> str:
         "Model & S\\_random & S\\_attack\\_holdout & $\\Delta$ Gap \\\\",
         "\\midrule",
     ]
-    
-    random_df = df[df['protocol'] == 'S_random'].set_index('model')
-    holdout_df = df[df['protocol'] == 'S_attack_holdout'].set_index('model')
-    
+
+    random_df = df[df["protocol"] == "S_random"].set_index("model")
+    holdout_df = df[df["protocol"] == "S_attack_holdout"].set_index("model")
+
     for model in random_df.index:
         if model in holdout_df.index:
-            model_display = model.replace('_', '\\_')
-            fpr_random = random_df.loc[model, 'fpr_at_tpr_90_mean']
-            fpr_holdout = holdout_df.loc[model, 'fpr_at_tpr_90_mean']
+            model_display = model.replace("_", "\\_")
+            fpr_random = random_df.loc[model, "fpr_at_tpr_90_mean"]
+            fpr_holdout = holdout_df.loc[model, "fpr_at_tpr_90_mean"]
             gap = fpr_holdout - fpr_random
-            
-            lines.append(f"{model_display} & {fpr_random:.3f} & {fpr_holdout:.3f} & {gap:+.3f} \\\\")
-    
+
+            lines.append(
+                f"{model_display} & {fpr_random:.3f} & {fpr_holdout:.3f} & {gap:+.3f} \\\\"
+            )
+
     lines.append("\\bottomrule")
-    
-    lines.extend([
-        "\\end{tabular}",
-        "\\end{table}",
-        "",
-    ])
-    
+
+    lines.extend(
+        [
+            "\\end{tabular}",
+            "\\end{table}",
+            "",
+        ]
+    )
+
     return "\n".join(lines)
 
 
@@ -248,10 +261,7 @@ def generate_truncation_ablation_table(df: pd.DataFrame) -> str:
         "& \\multicolumn{3}{c}{ASR (\\%)} "
         "& \\multicolumn{2}{c}{Latency (ms)} \\\\",
         "\\cmidrule(lr){3-5} \\cmidrule(lr){6-8} \\cmidrule(lr){9-10}",
-        "Protocol & Strategy "
-        "& @1\\% & @3\\% & @5\\% "
-        "& @1\\% & @3\\% & @5\\% "
-        "& P50 & P95 \\\\",
+        "Protocol & Strategy & @1\\% & @3\\% & @5\\% & @1\\% & @3\\% & @5\\% & P50 & P95 \\\\",
         "\\midrule",
     ]
 
@@ -263,26 +273,14 @@ def generate_truncation_ablation_table(df: pd.DataFrame) -> str:
             prot_display = protocol.replace("_", "\\_")
 
             # TPR at budgets
-            tpr1 = format_percent(
-                row.get("budget_1_tpr_mean", 0), row.get("budget_1_tpr_std", 0)
-            )
-            tpr3 = format_percent(
-                row.get("budget_3_tpr_mean", 0), row.get("budget_3_tpr_std", 0)
-            )
-            tpr5 = format_percent(
-                row.get("budget_5_tpr_mean", 0), row.get("budget_5_tpr_std", 0)
-            )
+            tpr1 = format_percent(row.get("budget_1_tpr_mean", 0), row.get("budget_1_tpr_std", 0))
+            tpr3 = format_percent(row.get("budget_3_tpr_mean", 0), row.get("budget_3_tpr_std", 0))
+            tpr5 = format_percent(row.get("budget_5_tpr_mean", 0), row.get("budget_5_tpr_std", 0))
 
             # ASR at budgets
-            asr1 = format_percent(
-                row.get("budget_1_asr_mean", 0), row.get("budget_1_asr_std", 0)
-            )
-            asr3 = format_percent(
-                row.get("budget_3_asr_mean", 0), row.get("budget_3_asr_std", 0)
-            )
-            asr5 = format_percent(
-                row.get("budget_5_asr_mean", 0), row.get("budget_5_asr_std", 0)
-            )
+            asr1 = format_percent(row.get("budget_1_asr_mean", 0), row.get("budget_1_asr_std", 0))
+            asr3 = format_percent(row.get("budget_3_asr_mean", 0), row.get("budget_3_asr_std", 0))
+            asr5 = format_percent(row.get("budget_5_asr_mean", 0), row.get("budget_5_asr_std", 0))
 
             # Latency
             p50 = f"{row.get('latency_p50_ms_mean', 0):.2f}"
@@ -299,11 +297,13 @@ def generate_truncation_ablation_table(df: pd.DataFrame) -> str:
     # Replace last midrule with bottomrule
     lines[-1] = "\\bottomrule"
 
-    lines.extend([
-        "\\end{tabular}}",
-        "\\end{table}",
-        "",
-    ])
+    lines.extend(
+        [
+            "\\end{tabular}}",
+            "\\end{table}",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -318,6 +318,7 @@ def generate_longschema_stress_table(
     Columns: Protocol, Strategy, Prompt Truncated %, Prompt Retention Mean,
              ROC-AUC, PR-AUC, FPR@TPR90, Latency P50/P95.
     """
+
     # Derive strategy name from model name
     def _strategy(model: str) -> str:
         if "naive" in model:
@@ -337,9 +338,7 @@ def generate_longschema_stress_table(
     )
 
     if merged.empty:
-        return (
-            "% Table 7: Longschema Stress Test — no data after merge\n"
-        )
+        return "% Table 7: Longschema Stress Test — no data after merge\n"
 
     lines = [
         "% Table 7: Enterprise Truncation Stress Test (Long Schema)",
@@ -368,17 +367,13 @@ def generate_longschema_stress_table(
             strat = row["strategy"].replace("_", "\\_")
             prot_display = protocol.replace("_", "\\_")
 
-            trunc_pct = f"{row.get('pct_prompt_truncated', 0)*100:.1f}\\%"
+            trunc_pct = f"{row.get('pct_prompt_truncated', 0) * 100:.1f}\\%"
             ret_mean = f"{row.get('prompt_retention_ratio_mean', 0):.3f}"
 
             roc = format_metric(row.get("roc_auc_mean", 0), row.get("roc_auc_std", 0))
             pr = format_metric(row.get("pr_auc_mean", 0), row.get("pr_auc_std", 0))
-            fpr90 = format_metric(
-                row.get("fpr_at_tpr_90_mean", 0), row.get("fpr_at_tpr_90_std", 0)
-            )
-            fpr95 = format_metric(
-                row.get("fpr_at_tpr_95_mean", 0), row.get("fpr_at_tpr_95_std", 0)
-            )
+            fpr90 = format_metric(row.get("fpr_at_tpr_90_mean", 0), row.get("fpr_at_tpr_90_std", 0))
+            fpr95 = format_metric(row.get("fpr_at_tpr_95_mean", 0), row.get("fpr_at_tpr_95_std", 0))
 
             p50 = f"{row.get('latency_p50_ms_mean', 0):.2f}"
             p95 = f"{row.get('latency_p95_ms_mean', 0):.2f}"
@@ -393,25 +388,31 @@ def generate_longschema_stress_table(
 
     lines[-1] = "\\bottomrule"
 
-    lines.extend([
-        "\\end{tabular}}",
-        "\\end{table}",
-        "",
-    ])
+    lines.extend(
+        [
+            "\\end{tabular}}",
+            "\\end{table}",
+            "",
+        ]
+    )
 
     return "\n".join(lines)
 
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Generate LaTeX tables from summary CSV")
     parser.add_argument(
-        "--summary-csv", type=Path,
+        "--summary-csv",
+        type=Path,
         default=Path("data/reports/experiments/summary.csv"),
         help="Path to summary.csv",
     )
     parser.add_argument(
-        "--truncation-stats-csv", type=Path, default=None,
+        "--truncation-stats-csv",
+        type=Path,
+        default=None,
         help="Path to truncation_stats.csv (enables longschema stress table)",
     )
     args = parser.parse_args()
@@ -422,11 +423,11 @@ def main():
         print(f"% Error: {summary_path} not found")
         print("% Run experiments first: python scripts/run_experiments.py")
         return
-    
+
     df = pd.read_csv(summary_path)
 
     output_parts = []
-    
+
     output_parts.append("%======================================================================")
     output_parts.append("% ToolShield Evaluation Results - LaTeX Tables")
     output_parts.append("% Generated by scripts/generate_latex_from_summary.py")
@@ -435,7 +436,7 @@ def main():
     output_parts.append("% Required packages:")
     output_parts.append("% \\usepackage{booktabs}")
     output_parts.append("")
-    
+
     output_parts.append(generate_main_results_table(df))
     output_parts.append(generate_asr_table(df))
     output_parts.append(generate_budget_table(df))

@@ -1,5 +1,11 @@
 """Evaluation metrics and model evaluation for prompt injection detection."""
 
+from toolshield.evaluation.evaluator import (
+    BudgetResult,
+    EvaluationResult,
+    ModelEvaluator,
+    load_records_from_split,
+)
 from toolshield.evaluation.metrics import (
     LatencyResult,
     MetricsResult,
@@ -10,12 +16,6 @@ from toolshield.evaluation.metrics import (
     compute_roc_auc,
     measure_latency,
     measure_per_sample_latency,
-)
-from toolshield.evaluation.evaluator import (
-    BudgetResult,
-    EvaluationResult,
-    ModelEvaluator,
-    load_records_from_split,
 )
 
 __all__ = [

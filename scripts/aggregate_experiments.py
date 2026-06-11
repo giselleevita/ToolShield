@@ -39,11 +39,12 @@ BUDGET_LEVELS = [1, 3, 5]  # percentage
 @dataclass
 class EvalResult:
     """Parsed evaluation result."""
+
     seed: int
     protocol: str
     model: str
     source_path: str
-    
+
     # Core metrics
     roc_auc: float
     pr_auc: float
@@ -53,11 +54,11 @@ class EvalResult:
     asr_reduction_95: float
     blocked_benign_rate_90: float
     blocked_benign_rate_95: float
-    
+
     # Latency
     latency_p50_ms: float | None = None
     latency_p95_ms: float | None = None
-    
+
     # Budget results: {budget_pct: {threshold, fpr, tpr, asr, blocked_benign}}
     budget_results: dict[int, dict[str, float]] = field(default_factory=dict)
 
@@ -92,27 +93,27 @@ def _scan_seed_dirs(root: Path, results: list[tuple[Path, int, str, str]]) -> No
 
 def discover_eval_outputs(reports_dir: Path) -> list[tuple[Path, int, str, str]]:
     """Discover all evaluation JSON files.
-    
+
     Returns list of (path, seed, protocol, model) tuples.
-    
+
     Sources:
     1. {reports_dir}/{protocol}/{model}_metrics.json (seed=0, from make eval)
     2. {reports_dir}/experiments/seed_{n}/{protocol}/{model}/metrics.json
     3. {reports_dir}/seed_{n}/{protocol}/{model}/metrics.json (direct seed dirs)
     """
     results = []
-    
+
     # Source 1: Direct protocol directories (from make eval)
     for protocol in EXPECTED_PROTOCOLS:
         protocol_dir = reports_dir / protocol
         if not protocol_dir.exists():
             continue
-        
+
         for metrics_file in protocol_dir.glob("*_metrics.json"):
             # Extract model name from filename
             model = metrics_file.stem.replace("_metrics", "")
             results.append((metrics_file, 0, protocol, model))
-    
+
     # Source 2: Experiments subdirectory
     experiments_dir = reports_dir / "experiments"
     if experiments_dir.exists():
@@ -121,7 +122,7 @@ def discover_eval_outputs(reports_dir: Path) -> list[tuple[Path, int, str, str]]
     # Source 3: Direct seed_* dirs in reports_dir (for custom experiment roots)
     if any(reports_dir.glob("seed_*")):
         _scan_seed_dirs(reports_dir, results)
-    
+
     return results
 
 
@@ -138,10 +139,10 @@ def parse_eval_json(
     except (json.JSONDecodeError, FileNotFoundError) as e:
         console.print(f"[yellow]Warning: Could not parse {path}: {e}[/yellow]")
         return None
-    
+
     # Handle different JSON formats
     metrics = data.get("metrics", data)
-    
+
     # Extract core metrics with fallbacks
     roc_auc = metrics.get("roc_auc", 0.0)
     pr_auc = metrics.get("pr_auc", 0.0)
@@ -151,16 +152,16 @@ def parse_eval_json(
     asr_reduction_95 = metrics.get("asr_reduction_95", 0.0)
     blocked_benign_rate_90 = metrics.get("blocked_benign_rate_90", fpr_at_tpr_90)
     blocked_benign_rate_95 = metrics.get("blocked_benign_rate_95", fpr_at_tpr_95)
-    
+
     # Skip if no meaningful metrics (likely a config file without results)
     if roc_auc == 0.0 and pr_auc == 0.0:
         return None
-    
+
     # Latency
     latency = data.get("latency", metrics)
     latency_p50 = latency.get("latency_p50_ms")
     latency_p95 = latency.get("latency_p95_ms")
-    
+
     # Budget results
     budget_results = {}
     for budget_data in data.get("budget_results", []):
@@ -173,7 +174,7 @@ def parse_eval_json(
                 "asr": budget_data.get("asr_after", 0.0),
                 "blocked_benign": budget_data.get("blocked_benign_rate", 0.0),
             }
-    
+
     return EvalResult(
         seed=seed,
         protocol=protocol,
@@ -202,13 +203,13 @@ def deduplicate_results(results: list[EvalResult]) -> list[EvalResult]:
         if key not in groups:
             groups[key] = []
         groups[key].append(r)
-    
+
     # Pick best from each group (most budget results, then highest ROC-AUC)
     deduped = []
     for key, group in groups.items():
         best = max(group, key=lambda r: (len(r.budget_results), r.roc_auc))
         deduped.append(best)
-    
+
     return deduped
 
 
@@ -219,40 +220,40 @@ def validate_completeness(
 ) -> list[str]:
     """Validate completeness and return warnings."""
     warnings = []
-    
+
     # Group results
     seeds = sorted(set(r.seed for r in results))
     protocols = sorted(set(r.protocol for r in results))
     models = sorted(set(r.model for r in results))
-    
+
     # Check only one protocol
     if len(protocols) == 1:
         warnings.append(f"Only one protocol present: {protocols[0]}")
-    
+
     # Check expected seeds
     if expected_seeds is not None:
         missing_seeds = set(expected_seeds) - set(seeds)
         if missing_seeds:
             warnings.append(f"Missing expected seeds: {sorted(missing_seeds)}")
-    
+
     # Check transformer models
     transformer_models = {"transformer", "context_transformer"}
     present_transformers = transformer_models.intersection(models)
     missing_transformers = transformer_models - set(models)
     if missing_transformers:
         warnings.append(f"Transformer models missing: {sorted(missing_transformers)}")
-    
+
     # Check model consistency across protocols
     model_by_protocol = {p: set() for p in protocols}
     for r in results:
         model_by_protocol[r.protocol].add(r.model)
-    
+
     all_models = set.union(*model_by_protocol.values()) if model_by_protocol else set()
     for protocol, pmodels in model_by_protocol.items():
         missing = all_models - pmodels
         if missing:
             warnings.append(f"Protocol {protocol} missing models: {sorted(missing)}")
-    
+
     return warnings
 
 
@@ -275,7 +276,7 @@ def build_raw_dataframe(results: list[EvalResult]) -> pd.DataFrame:
             "latency_p50_ms": r.latency_p50_ms,
             "latency_p95_ms": r.latency_p95_ms,
         }
-        
+
         # Budget columns
         for budget_pct in BUDGET_LEVELS:
             if budget_pct in r.budget_results:
@@ -291,14 +292,14 @@ def build_raw_dataframe(results: list[EvalResult]) -> pd.DataFrame:
                 row[f"budget_{budget_pct}_tpr"] = np.nan
                 row[f"budget_{budget_pct}_asr"] = np.nan
                 row[f"budget_{budget_pct}_blocked_benign"] = np.nan
-        
+
         rows.append(row)
-    
+
     df = pd.DataFrame(rows)
-    
+
     # Sort for determinism
     df = df.sort_values(["seed", "protocol", "model"]).reset_index(drop=True)
-    
+
     return df
 
 
@@ -306,25 +307,33 @@ def build_summary_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate raw results into summary with mean ± std."""
     if raw_df.empty:
         return pd.DataFrame()
-    
+
     # Metrics to aggregate
     metric_cols = [
-        "roc_auc", "pr_auc", "fpr_at_tpr_90", "fpr_at_tpr_95",
-        "asr_reduction_90", "asr_reduction_95",
-        "blocked_benign_rate_90", "blocked_benign_rate_95",
-        "latency_p50_ms", "latency_p95_ms",
+        "roc_auc",
+        "pr_auc",
+        "fpr_at_tpr_90",
+        "fpr_at_tpr_95",
+        "asr_reduction_90",
+        "asr_reduction_95",
+        "blocked_benign_rate_90",
+        "blocked_benign_rate_95",
+        "latency_p50_ms",
+        "latency_p95_ms",
     ]
-    
+
     # Add budget columns
     for budget_pct in BUDGET_LEVELS:
-        metric_cols.extend([
-            f"budget_{budget_pct}_threshold",
-            f"budget_{budget_pct}_fpr",
-            f"budget_{budget_pct}_tpr",
-            f"budget_{budget_pct}_asr",
-            f"budget_{budget_pct}_blocked_benign",
-        ])
-    
+        metric_cols.extend(
+            [
+                f"budget_{budget_pct}_threshold",
+                f"budget_{budget_pct}_fpr",
+                f"budget_{budget_pct}_tpr",
+                f"budget_{budget_pct}_asr",
+                f"budget_{budget_pct}_blocked_benign",
+            ]
+        )
+
     agg_rows = []
     for (protocol, model), group in raw_df.groupby(["protocol", "model"]):
         agg_row = {
@@ -332,7 +341,7 @@ def build_summary_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
             "model": model,
             "n_seeds": len(group),
         }
-        
+
         for col in metric_cols:
             if col in group.columns:
                 values = group[col].dropna()
@@ -342,14 +351,14 @@ def build_summary_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
                 else:
                     agg_row[f"{col}_mean"] = np.nan
                     agg_row[f"{col}_std"] = np.nan
-        
+
         agg_rows.append(agg_row)
-    
+
     summary_df = pd.DataFrame(agg_rows)
-    
+
     # Sort for determinism
     summary_df = summary_df.sort_values(["protocol", "model"]).reset_index(drop=True)
-    
+
     return summary_df
 
 
@@ -403,23 +412,23 @@ def main():
         action="store_true",
         help="Show detailed output",
     )
-    
+
     args = parser.parse_args()
-    
+
     console.print("[bold]Aggregating Experiment Results[/bold]")
     console.print(f"Reports directory: {args.reports_dir}")
     console.print(f"Output directory: {args.output_dir}")
     console.print()
-    
+
     # Discover evaluation outputs
     console.print("[cyan]Discovering evaluation outputs...[/cyan]")
     discovered = discover_eval_outputs(args.reports_dir)
     console.print(f"Found {len(discovered)} evaluation files")
-    
+
     if args.verbose:
         for path, seed, protocol, model in discovered:
             console.print(f"  - seed={seed}, {protocol}/{model}: {path}")
-    
+
     # Parse all results
     console.print("[cyan]Parsing evaluation results...[/cyan]")
     results = []
@@ -427,52 +436,52 @@ def main():
         result = parse_eval_json(path, seed, protocol, model)
         if result is not None:
             results.append(result)
-    
+
     console.print(f"Parsed {len(results)} valid results")
-    
+
     # Deduplicate
     results = deduplicate_results(results)
     console.print(f"After deduplication: {len(results)} results")
-    
+
     if not results:
         console.print("[red]No valid results found![/red]")
         sys.exit(1)
-    
+
     # Validate completeness
     console.print("[cyan]Validating completeness...[/cyan]")
     warnings = validate_completeness(results, args.expect_seeds, args.strict)
-    
+
     for w in warnings:
         console.print(f"[yellow]Warning: {w}[/yellow]")
-    
+
     if args.strict and warnings:
         console.print("[red]Strict mode: failing due to warnings[/red]")
         sys.exit(1)
-    
+
     # Build outputs
     console.print("[cyan]Building output files...[/cyan]")
-    
+
     raw_df = build_raw_dataframe(results)
     summary_df = build_summary_dataframe(raw_df)
     results_json = build_results_json(results, raw_df, summary_df)
-    
+
     # Create output directory
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Save files (always overwrite)
     raw_csv_path = args.output_dir / "raw_results.csv"
     raw_df.to_csv(raw_csv_path, index=False)
     console.print(f"  Saved: {raw_csv_path}")
-    
+
     summary_csv_path = args.output_dir / "summary.csv"
     summary_df.to_csv(summary_csv_path, index=False)
     console.print(f"  Saved: {summary_csv_path}")
-    
+
     results_json_path = args.output_dir / "results.json"
     with open(results_json_path, "w") as f:
         json.dump(results_json, f, indent=2)
     console.print(f"  Saved: {results_json_path}")
-    
+
     # Print summary table
     console.print()
     table = Table(title="Aggregation Summary")
@@ -482,20 +491,20 @@ def main():
     table.add_column("ROC-AUC")
     table.add_column("PR-AUC")
     table.add_column("FPR@TPR90")
-    
+
     for _, row in summary_df.iterrows():
         roc = f"{row.get('roc_auc_mean', 0):.4f}"
         if row.get("roc_auc_std", 0) > 0:
             roc += f" ± {row['roc_auc_std']:.4f}"
-        
+
         pr = f"{row.get('pr_auc_mean', 0):.4f}"
         if row.get("pr_auc_std", 0) > 0:
             pr += f" ± {row['pr_auc_std']:.4f}"
-        
+
         fpr = f"{row.get('fpr_at_tpr_90_mean', 0):.4f}"
         if row.get("fpr_at_tpr_90_std", 0) > 0:
             fpr += f" ± {row['fpr_at_tpr_90_std']:.4f}"
-        
+
         table.add_row(
             str(row["protocol"]),
             str(row["model"]),
@@ -504,9 +513,9 @@ def main():
             pr,
             fpr,
         )
-    
+
     console.print(table)
-    
+
     console.print()
     console.print("[bold green]Aggregation complete![/bold green]")
 

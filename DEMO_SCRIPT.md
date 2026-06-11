@@ -1,6 +1,6 @@
 # ToolShield 90-Second Demo Script
 
-**For: Netcompany Interview / Thesis Defense**
+**For: Technical Review / Thesis Defense**
 
 ---
 
@@ -147,4 +147,4 @@ curl -X POST http://localhost:8000/configure \
 
 ---
 
-*Prepared for thesis defense / Netcompany interview*
+*Prepared for thesis defense and technical review*
