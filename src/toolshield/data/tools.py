@@ -37,7 +37,7 @@ GET_CUSTOMER_RECORD = Tool(
         "Retrieve a customer's record including personal information, account details, "
         "and contact information. Requires valid customer ID. Returns sensitive PII."
     ),
-    schema={
+    schema_={
         "type": "object",
         "properties": {
             "customerId": {
@@ -56,7 +56,7 @@ SEARCH_TICKETS = Tool(
         "Search support tickets by query and date range. Returns ticket summaries "
         "including customer issues, support agent responses, and resolution status."
     ),
-    schema={
+    schema_={
         "type": "object",
         "properties": {
             "query": {
@@ -80,7 +80,7 @@ EXPORT_REPORT = Tool(
         "sales, customer_activity, support_metrics, and financial_summary. "
         "Scope can be 'all', 'department', or specific team identifiers."
     ),
-    schema={
+    schema_={
         "type": "object",
         "properties": {
             "reportType": {
@@ -105,7 +105,7 @@ RESET_USER_MFA = Tool(
         "operation that should only be performed after verifying the user's identity "
         "through an approved verification process. Audit logged."
     ),
-    schema={
+    schema_={
         "type": "object",
         "properties": {
             "userId": {

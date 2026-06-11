@@ -17,6 +17,7 @@ import json
 import logging
 import os
 import uuid
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from toolshield.guard.signing import GuardSigner, SignedDecisionRecord
+from toolshield.models.base import BaseClassifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -105,7 +107,7 @@ class AuditEntry(BaseModel):
 
 
 # Global model cache
-_model_cache: dict[str, Any] = {}
+_model_cache: dict[str, BaseClassifier] = {}
 _thresholds: dict[float, float] = DEFAULT_THRESHOLDS.copy()
 _signer = GuardSigner.from_environment()
 
@@ -122,7 +124,7 @@ def _hash_prompt(prompt: str) -> str:
     return hashlib.sha256(prompt.encode()).hexdigest()[:32]
 
 
-def _load_model(model_path: str) -> Any:
+def _load_model(model_path: str) -> BaseClassifier:
     """Load a model from disk, with caching.
 
     Args:
@@ -149,7 +151,7 @@ def _load_model(model_path: str) -> Any:
     if model_type == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
 
-        model = HeuristicClassifier.load(model_dir)
+        model: BaseClassifier = HeuristicClassifier.load(model_dir)
     elif model_type == "heuristic_score":
         from toolshield.models.heuristic_score import ScoredHeuristicClassifier
 
@@ -231,7 +233,7 @@ def _generate_explanation(score: float, threshold: float, decision: str) -> str:
 
 
 @asynccontextmanager
-async def _lifespan(application: FastAPI):  # noqa: ARG001
+async def _lifespan(application: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
     """Pre-load model on startup and warmup if applicable."""
     try:
         model = _load_model(DEFAULT_MODEL_PATH)

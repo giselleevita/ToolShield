@@ -27,6 +27,7 @@ from toolshield.data.generate_dataset import generate_and_save
 from toolshield.data.make_splits import SplitProtocol, create_and_save_splits
 from toolshield.data.schema import DatasetRecord
 from toolshield.evaluation.metrics import print_metrics
+from toolshield.models.base import BaseClassifier
 from toolshield.utils.io import load_config, load_jsonl, save_manifest
 
 # Initialize Typer app
@@ -202,7 +203,7 @@ def train(
     if model == "heuristic":
         from toolshield.models.heuristic import HeuristicClassifier
 
-        classifier = HeuristicClassifier(config=model_config)
+        classifier: BaseClassifier = HeuristicClassifier(config=model_config)
     elif model == "heuristic_score":
         from toolshield.models.heuristic_score import ScoredHeuristicClassifier
 

@@ -45,6 +45,7 @@ dev = [
     "ruff>=0.1",
     "mypy>=1.5",
     "types-PyYAML>=6.0",
+    "pandas-stubs>=2.0",
     "httpx>=0.25",
     "matplotlib>=3.8",
     "seaborn>=0.13",

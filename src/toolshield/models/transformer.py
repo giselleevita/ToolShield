@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import torch
@@ -194,12 +194,15 @@ class TransformerClassifier(BaseClassifier):
             Dictionary with 'input_ids' and 'attention_mask' tensors.
         """
         texts = self._get_texts(records_batch)
-        return self.tokenizer(
-            texts,
-            truncation=True,
-            padding=True,
-            max_length=self.max_length,
-            return_tensors="pt",
+        return cast(
+            dict[str, torch.Tensor],
+            self.tokenizer(
+                texts,
+                truncation=True,
+                padding=True,
+                max_length=self.max_length,
+                return_tensors="pt",
+            ),
         )
 
     def train(
@@ -331,7 +334,7 @@ class TransformerClassifier(BaseClassifier):
         self.model.eval()
         device = next(self.model.parameters()).device
 
-        all_scores = []
+        all_scores: list[float] = []
 
         # Process in batches with inference_mode for efficiency
         with torch.inference_mode():
@@ -380,7 +383,7 @@ class TransformerClassifier(BaseClassifier):
         self.model.eval()
         device = next(self.model.parameters()).device
 
-        all_scores = []
+        all_scores: list[float] = []
         total_tokenize_ms = 0.0
         total_infer_ms = 0.0
 

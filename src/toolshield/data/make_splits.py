@@ -369,7 +369,7 @@ def create_splits(
     """
     # Convert dicts to DatasetRecord if needed
     if records and isinstance(records[0], dict):
-        records = _records_to_objects(records)  # type: ignore
+        records = _records_to_objects(records)
 
     protocol_str = protocol.value if isinstance(protocol, SplitProtocol) else protocol
 

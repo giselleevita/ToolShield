@@ -159,7 +159,7 @@ class TfidfLRClassifier(BaseClassifier):
             raise RuntimeError("Model must be trained before prediction")
 
         X = self.extract_prompts(records)
-        return self.pipeline.predict_proba(X)[:, 1]
+        return np.asarray(self.pipeline.predict_proba(X)[:, 1], dtype=float)
 
     def save(self, path: str | Path) -> None:
         """Save the model to disk.

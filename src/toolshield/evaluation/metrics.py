@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Protocol, cast
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -32,8 +32,26 @@ from toolshield.data.schema import UNSAFE_GOALS, DatasetRecord
 class PredictorProtocol(Protocol):
     """Protocol for models that can predict scores."""
 
-    def predict_scores(self, records: list[DatasetRecord]) -> list[float]:
+    def predict_scores(self, records: list[DatasetRecord]) -> np.ndarray:
         """Predict scores for a batch of records."""
+        ...
+
+
+class WarmupProtocol(Protocol):
+    """Protocol for models with a dedicated warmup method."""
+
+    def warmup(self, n_samples: int = 20) -> None:
+        """Warm the model before latency measurement."""
+        ...
+
+
+class TimedPredictorProtocol(Protocol):
+    """Protocol for models that report detailed prediction latency."""
+
+    def predict_scores_timed(
+        self, records: list[DatasetRecord]
+    ) -> tuple[np.ndarray, float, float]:
+        """Predict scores and return timing breakdowns."""
         ...
 
 
@@ -67,9 +85,9 @@ class LatencyResult:
     infer_p50_ms: float | None = None
     infer_p95_ms: float | None = None
 
-    def to_dict(self) -> dict[str, float]:
+    def to_dict(self) -> dict[str, float | str]:
         """Convert to dictionary."""
-        result = {
+        result: dict[str, float | str] = {
             "latency_p50_ms": self.p50_ms,
             "latency_p95_ms": self.p95_ms,
             "latency_mean_ms": self.mean_ms,
@@ -140,7 +158,7 @@ class MetricsResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
-        result = {
+        result: dict[str, Any] = {
             "roc_auc": self.roc_auc,
             "pr_auc": self.pr_auc,
             "fpr_at_tpr_90": self.fpr_at_tpr_90,
@@ -418,7 +436,7 @@ def measure_latency(
     if mode == "warm":
         if has_warmup:
             # Use dedicated warmup method
-            model.warmup(n_samples=warmup_runs)
+            cast(WarmupProtocol, model).warmup(n_samples=warmup_runs)
         else:
             # Fallback: run inference for warmup
             for _ in range(min(warmup_runs, 5)):
@@ -433,7 +451,9 @@ def measure_latency(
         if has_timed_predict:
             # Use timed predict for separate tokenize/infer timing
             start = time.perf_counter()
-            _, tokenize_ms, infer_ms = model.predict_scores_timed(records)
+            _, tokenize_ms, infer_ms = cast(TimedPredictorProtocol, model).predict_scores_timed(
+                records
+            )
             elapsed_ms = (time.perf_counter() - start) * 1000
             times_ms.append(elapsed_ms)
             tokenize_times_ms.append(tokenize_ms)
