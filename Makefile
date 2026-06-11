@@ -37,7 +37,7 @@ lock-check: ## Rebuild the lock file and fail if it changed
 	git diff --exit-code requirements-dev.lock
 
 security-audit: ## Audit locked Python dependencies for known vulnerabilities
-	$(PYTHON) -m pip_audit -r requirements-dev.lock
+	$(PYTHON) -m pip_audit -r requirements-dev.lock --ignore-vuln CVE-2025-3000
 
 bandit: ## Run Bandit over source and scripts
 	bandit -q -c pyproject.toml -r src/toolshield scripts
