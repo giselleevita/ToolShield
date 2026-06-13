@@ -3,6 +3,8 @@
 A research-grade repository for detecting prompt injection attacks in tool-using LLM agents.
 Developed for bachelor's thesis research on LLM security.
 
+**Private repository — reviewers:** see [docs/REVIEWER_GUIDE.md](docs/REVIEWER_GUIDE.md) for a 15-minute evaluation path (available on request).
+
 ## Overview
 
 This project implements:
