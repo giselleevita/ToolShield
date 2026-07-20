@@ -97,7 +97,7 @@ This design allows the context-aware transformer model to learn correlations bet
 \section{Prompt Injection Families}
 \label{subsec:attack_families}
 
-A key objective of ToolShield is to measure robustness to diverse injection strategies. Therefore, attacks are grouped into four families (AF1--AF4), each representing a distinct manipulation style. The family structure is intended to approximate the diversity observed in real prompt injection attacks described in prior work~\cite{CITATION_PROMPT_INJECTION_SURVEY}.
+A key objective of ToolShield is to measure robustness to diverse injection strategies. Therefore, attacks are grouped into four families (AF1--AF4), each representing a distinct manipulation style. The family structure is intended to approximate the diversity observed in real prompt injection attacks described in prior work~\cite{tool_use_security}.
 
 \subsection{AF1: Direct Instruction Override}
 
@@ -315,7 +315,7 @@ This simulates real deployment constraints where blocking too many benign prompt
 
 \subsection{Latency Measurement}
 
-Inference latency is measured using timed prediction runs. ToolShield reports P50 and P95 latency percentiles under warm-start conditions.
+Inference latency is measured using timed prediction runs over a fixed batch of 100 test samples in a single call, repeated for $n_{\text{runs}}{=}10$ timing runs after warmup. ToolShield reports P50 and P95 percentiles of these batch times under warm-start conditions. Because each timing covers a 100-sample batch rather than an individual request, the values support relative comparison between models but do not directly estimate per-request serving latency.
 
 Latency is critical for evaluating whether the model is feasible as a runtime guardrail in LLM tool pipelines.
 

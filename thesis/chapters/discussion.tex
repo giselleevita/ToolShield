@@ -72,7 +72,7 @@ In practical terms, this failure mode would cause a deployed guard system to beh
 
 \subsection{Why truncation bias is not visible in the standard dataset}
 
-In the standard dataset configuration, the schema length is constrained by \texttt{max\_schema\_length=200} characters. Under this setting, schemas remain short enough that the total sequence typically fits within the 256-token budget. As a result, both truncation strategies achieve similar performance (Table~\ref{tab:truncation-ablation}).
+In the standard dataset configuration, the schema length is constrained by \texttt{max\_schema\_length=200} characters. Under this setting, schemas remain short enough that the total sequence typically fits within the 256-token budget. As a result, both truncation strategies achieve similar performance (Table~\ref{tab:main-results}).
 
 This highlights a key methodological point: evaluation under artificially short schemas can hide truncation failure modes that would emerge when schemas approach production-scale lengths. The long-schema stress test therefore provides a necessary complement to the standard evaluation.
 
@@ -110,7 +110,7 @@ A guard system that truncates the prompt risks silently degrading into a schema-
 
 \subsection{Operating-point evaluation matters}
 
-The budget-based evaluation metrics (Table~\ref{tab:budget-results}) and ASR reduction metrics (Table~\ref{tab:asr-results}) emphasize that threshold selection matters in deployment. A model with strong ROC-AUC may still be unusable if it cannot achieve a low false positive rate at high recall.
+The operating-point metrics (FPR@TPR in Table~\ref{tab:main-results}) and ASR reduction metrics (Table~\ref{tab:asr-results}) emphasize that threshold selection matters in deployment. A model with strong ROC-AUC may still be unusable if it cannot achieve a low false positive rate at high recall.
 
 In the long-schema setting, the naive truncation strategy fails precisely in this sense: even if the model produces scores, it cannot achieve a threshold that satisfies reasonable false positive budgets.
 

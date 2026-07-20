@@ -4,7 +4,7 @@
 This chapter presents the empirical evaluation of ToolShield across multiple split protocols and model families. We report performance using ROC-AUC and PR-AUC as threshold-independent metrics, and FPR@TPR90/95 as operating-point metrics relevant for deployment. Additionally, we evaluate the reduction in Attack Success Rate (ASR reduction) under controlled false-positive budgets and analyze inference latency.
 
 \paragraph{Experimental setup recap.}
-Neural model results (context transformer variants) are aggregated over $n{=}3$ independent random seeds (seeds 0, 1, 2) and reported as mean $\pm$ standard deviation. Some baseline rows in Table~\ref{tab:main-results} are reported for a single seed ($n_{\text{seeds}}{=}1$): specifically \texttt{heuristic}, \texttt{heuristic\_score}, \texttt{tfidf\_lr}, and \texttt{transformer}, which were executed once in the standard dataset due to runtime constraints. Models are evaluated on two primary protocols: \texttt{S\_random} (stratified random split with template leakage prevention) and \texttt{S\_attack\_holdout} (AF4 held out from training). The metrics reported are: ROC-AUC, PR-AUC, FPR@TPR90, FPR@TPR95, ASR reduction at both operating points, and warm-start inference latency at P50 and P95 percentiles.
+All model results are aggregated over $n{=}3$ independent random seeds (seeds 0, 1, 2) and reported as mean $\pm$ standard deviation. Models are evaluated on two primary protocols: \texttt{S\_random} (stratified random split with template leakage prevention) and \texttt{S\_attack\_holdout} (AF4 held out from training). The metrics reported are: ROC-AUC, PR-AUC, FPR@TPR90, FPR@TPR95, ASR reduction at both operating points, and warm-start inference latency at P50 and P95 percentiles.
 
 All reported values are taken directly from \texttt{summary.csv} and \texttt{truncation\_stats.csv} in the thesis artifact bundle (Table~\ref{tab:main-results}, Table~\ref{tab:longschema-stress}).
 
@@ -34,7 +34,7 @@ On \texttt{S\_random}, multiple models achieve near-ceiling performance:
 
 \begin{itemize}
     \item \texttt{tfidf\_lr} achieves ROC-AUC $=0.9999$ and PR-AUC $=0.9999$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.000$.
-    \item \texttt{transformer} (text-only) achieves ROC-AUC $=0.9877$ and PR-AUC $=0.9911$, but exhibits higher false positive rates at strict operating points (FPR@TPR90 $=0.020$, FPR@TPR95 $=0.200$).
+    \item \texttt{transformer} (text-only) achieves ROC-AUC $=0.9977$ and PR-AUC $=0.9982$; it matches the context-aware variants at FPR@TPR90 $=0.000$ but shows a small penalty at the strictest operating point (FPR@TPR95 $=0.040$ vs.\ $0.000$ for the context-aware models).
     \item \texttt{context\_transformer\_keep\_prompt} achieves ROC-AUC $=1.000$ and PR-AUC $=1.000$, with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.000$.
 \end{itemize}
 
@@ -56,7 +56,7 @@ These results show that, in the standard dataset configuration, both truncation 
 \section{Attack Success Rate (ASR) Reduction}
 \label{subsec:asr_reduction}
 
-We report ASR reduction at two operating points: TPR90 and TPR95 (Table~\ref{tab:asr-results}). ASR reduction measures how effectively the detector blocks malicious prompts when deployed as a binary gate before tool execution. Budget-constrained threshold selection results are presented in Table~\ref{tab:budget-results}.
+We report ASR reduction at two operating points: TPR90 and TPR95 (Table~\ref{tab:asr-results}). ASR reduction measures how effectively the detector blocks malicious prompts when deployed as a binary gate before tool execution. A budget-constrained threshold-selection evaluation (thresholds chosen on the validation split to satisfy fixed FPR budgets) was also implemented; however, because the transformer models produce strongly saturated score distributions, validation-selected thresholds do not transfer reliably to the test split and the resulting operating points are degenerate. These results are therefore not reported as tables; making budget-based threshold transfer robust under score saturation is left to future work.
 
 \subsection{\texttt{S\_random}}
 
@@ -83,17 +83,17 @@ This confirms that ToolShield generalizes well to the held-out AF4 attack family
 \section{Latency Measurements}
 \label{subsec:latency}
 
-Inference latency was measured in warm mode. Table~\ref{tab:latency-results} summarizes P50 and P95 latencies.
+Inference latency was measured in warm mode. All reported values are wall-clock times for scoring a \emph{fixed batch of 100 test samples in a single call} (not per-request latencies); dividing by the batch size gives an approximate per-sample cost (e.g., ${\sim}\,40$\,ms per sample for \texttt{context\_transformer\_keep\_prompt}). The values are comparable across models measured on the same batch, but should not be read directly as per-request serving latency. Table~\ref{tab:latency-results} summarizes P50 and P95 latencies.
 
 On the standard dataset, the following latency trends are observed:
 
 \begin{itemize}
-    \item \texttt{tfidf\_lr} is the fastest model with P50 latency $=2.63$\,ms.
-    \item Transformer-based models exhibit the highest latencies: \texttt{transformer} (text-only) has P50 latency $=11614.90$\,ms, and \texttt{context\_transformer\_keep\_prompt} has P50 latency $=4669.87$\,ms.
-    \item \texttt{context\_transformer\_naive} has P50 latency $=2744.15$\,ms, lower than \texttt{keep\_prompt} due to the simpler single-pass tokenization.
+    \item \texttt{tfidf\_lr} is among the fastest models with P50 latency $=2.42$\,ms.
+    \item Transformer-based models exhibit the highest latencies: \texttt{context\_transformer\_keep\_prompt} has P50 latency $=3997.70$\,ms, while the text-only \texttt{transformer} (shorter inputs, no context fields) runs at $737.43$\,ms.
+    \item \texttt{context\_transformer\_naive} has P50 latency $=2469.62$\,ms, lower than \texttt{keep\_prompt} due to the simpler single-pass tokenization.
 \end{itemize}
 
-Thus, prompt-preserving truncation introduces additional runtime overhead, roughly increasing P50 latency from ${\sim}\,2.7$\,s to ${\sim}\,4.7$\,s in this environment. This is expected, since the \texttt{keep\_prompt} strategy performs two-pass tokenization and explicit budget allocation.
+Thus, prompt-preserving truncation introduces additional runtime overhead, roughly increasing P50 latency from ${\sim}\,2.5$\,s to ${\sim}\,4.0$\,s per 100-sample batch in this environment. This is expected, since the \texttt{keep\_prompt} strategy performs two-pass tokenization and explicit budget allocation.
 
 \section{Truncation Ablation on the Standard Dataset}
 \label{subsec:truncation_ablation_standard}
@@ -105,7 +105,7 @@ To evaluate whether truncation strategy affects detection performance, we compar
     \item \texttt{keep\_prompt}: explicit prompt-preserving truncation where a minimum prompt token budget is reserved.
 \end{itemize}
 
-On the standard dataset, both strategies yield nearly identical predictive performance (Table~\ref{tab:truncation-ablation}). For example, under \texttt{S\_attack\_holdout}, ROC-AUC is $0.9987$ for \texttt{keep\_prompt} and $0.9982$ for \texttt{naive}.
+On the standard dataset, both strategies yield nearly identical predictive performance (Table~\ref{tab:main-results}). For example, under \texttt{S\_attack\_holdout}, ROC-AUC is $0.9987$ for \texttt{keep\_prompt} and $0.9982$ for \texttt{naive}.
 
 This suggests that truncation bias is not visible in this dataset configuration due to the hard schema length constraint (\texttt{max\_schema\_length=200}), which prevents context fields from dominating the model input.
 
@@ -148,7 +148,7 @@ Under distribution shift with inflated schemas:
     \item \texttt{context\_transformer\_naive\_longschema} collapses to ROC-AUC $=0.4551$ and PR-AUC $=0.5409$.
 \end{itemize}
 
-The naive model performs close to random chance (ROC-AUC $\approx 0.5$). Additionally, the operating-point metrics show that it cannot achieve a usable detection threshold: FPR@TPR90 increases to $0.92$ and FPR@TPR95 increases to $0.95$. Budget thresholds become \texttt{inf} (Table~\ref{tab:budget-results}), indicating that no threshold can satisfy the budget constraint while maintaining meaningful detection.
+The naive model performs close to random chance (ROC-AUC $\approx 0.5$). Additionally, the operating-point metrics show that it cannot achieve a usable detection threshold: FPR@TPR90 increases to $0.92$ and FPR@TPR95 increases to $0.95$. No validation-selected threshold satisfies the FPR budgets while maintaining meaningful detection.
 
 In contrast, \texttt{keep\_prompt} maintains high detection performance under the evaluated conditions with FPR@TPR90 $=0.000$ and FPR@TPR95 $=0.010$, consistent with the standard dataset results.
 

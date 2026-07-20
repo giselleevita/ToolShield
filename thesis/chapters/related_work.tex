@@ -8,7 +8,7 @@ Prompt injection attacks have emerged as a central security challenge for Large 
 
 Prompt injection refers to adversarial inputs designed to manipulate an LLM into ignoring intended instructions or safety constraints. Early work highlighted that LLM behavior is strongly shaped by natural language instructions, which can be exploited through carefully crafted prompts \cite{prompt_injection_survey}. Greshake et al.\ observe that LLM-integrated applications can \enquote{blur the line between data and instructions} \cite{prompt_injection_survey}. Related research on \emph{jailbreaks} demonstrated that even aligned models can be induced to generate disallowed outputs using roleplay prompts, obfuscation, or indirect instructions \cite{jailbreak_taxonomy}.
 
-Several studies propose taxonomies of attack strategies, including direct override instructions, instruction hierarchy manipulation, and hidden or encoded payloads \cite{prompt_injection_taxonomy}. These findings suggest that prompt injection is not a single technique but a broad class of strategies exploiting the instruction-following behavior of LLMs. ToolShield aligns with this perspective by explicitly modeling multiple prompt injection families and evaluating generalization under attack-family distribution shifts.
+Several studies propose taxonomies of attack strategies, including direct override instructions, instruction hierarchy manipulation, and hidden or encoded payloads \cite{instruction_hierarchy}. These findings suggest that prompt injection is not a single technique but a broad class of strategies exploiting the instruction-following behavior of LLMs. ToolShield aligns with this perspective by explicitly modeling multiple prompt injection families and evaluating generalization under attack-family distribution shifts.
 
 \section{Security Challenges in Tool-Using LLM Systems}
 \label{subsec:rw_tool_use_security}
@@ -17,7 +17,7 @@ Tool-using LLM agents differ from standard chat models because the model output 
 
 Modern frameworks for tool use (often referred to as \emph{function calling}) provide structured tool schemas and attempt to constrain tool invocation through typed arguments. However, the tool selection and argument generation process remains controlled by the model, which is vulnerable to adversarial instruction patterns \cite{function_calling_risks}. BIPIA reports that \enquote{malicious instructions embedded within external content can manipulate LLM outputs} \cite{function_calling_risks}. ToolShield addresses this risk by framing prompt injection detection as a binary classification task executed prior to tool execution.
 
-In addition to user-controlled inputs, tool-using agents often process untrusted content from external sources such as webpages, emails, or documents. Prior work has shown that untrusted context can carry injection payloads that are not authored by the user but still influence the agent's behavior \cite{indirect_prompt_injection}. This motivates the inclusion of context-aware detection models that incorporate both the prompt and tool context.
+In addition to user-controlled inputs, tool-using agents often process untrusted content from external sources such as webpages, emails, or documents. Prior work has shown that untrusted context can carry injection payloads that are not authored by the user but still influence the agent's behavior \cite{prompt_injection_survey}. This motivates the inclusion of context-aware detection models that incorporate both the prompt and tool context.
 
 \section{LLM Safety Filters and Classification-Based Defenses}
 \label{subsec:rw_safety_filters}
@@ -47,7 +47,7 @@ ToolShield directly investigates truncation as a failure mode in prompt injectio
 \section{Synthetic Benchmarks and Security Evaluation Datasets}
 \label{subsec:rw_synthetic_benchmarks}
 
-Evaluating security defenses requires datasets containing both benign and adversarial prompts. Many prompt injection datasets are synthetic or semi-synthetic, constructed using manually designed templates or generated attacks \cite{prompt_injection_benchmarks}. Synthetic benchmarks provide reproducibility and control over attack families, but may fail to capture the diversity of real-world adversarial behavior.
+Evaluating security defenses requires datasets containing both benign and adversarial prompts. Many prompt injection datasets are synthetic or semi-synthetic, constructed using manually designed templates or generated attacks \cite{function_calling_risks}. Synthetic benchmarks provide reproducibility and control over attack families, but may fail to capture the diversity of real-world adversarial behavior.
 
 Recent work highlights that evaluation results can be sensitive to dataset design, including the distribution of attack templates, tool schemas, and prompt lengths \cite{benchmark_limitations}. JailbreakBench notes that \enquote{there is no clear standard of practice regarding jailbreaking evaluation} \cite{benchmark_limitations}. There is also ongoing discussion about whether synthetic benchmarks overestimate performance due to limited linguistic variation or unintentional artifacts.
 
