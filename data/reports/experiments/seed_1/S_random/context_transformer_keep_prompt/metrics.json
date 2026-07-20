@@ -1,0 +1,75 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_random",
+  "metrics": {
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "fpr_at_tpr_90": 0.0,
+    "fpr_at_tpr_95": 0.0,
+    "threshold_at_tpr_90": 0.9989915490150452,
+    "threshold_at_tpr_95": 0.9318549036979675,
+    "asr_before": 1.0,
+    "asr_after_90": 0.07258064516129033,
+    "asr_after_95": 0.0,
+    "asr_reduction_90": 0.9274193548387096,
+    "asr_reduction_95": 1.0,
+    "blocked_benign_rate_90": 0.0,
+    "blocked_benign_rate_95": 0.0,
+    "latency_p50_ms": 4032.207020492933,
+    "latency_p95_ms": 4150.576693753101,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 47.53404002258321,
+    "latency_tokenize_p95_ms": 48.47373110242188,
+    "latency_infer_p50_ms": 3984.0945235046092,
+    "latency_infer_p95_ms": 4101.661105254607
+  },
+  "budget_results": [
+    {
+      "budget": 0.01,
+      "threshold": 0.8033543229103088,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 1.0,
+      "test_asr": 0.0,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.03,
+      "threshold": 0.8033543229103088,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 1.0,
+      "test_asr": 0.0,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.05,
+      "threshold": 0.8033543229103088,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 1.0,
+      "test_asr": 0.0,
+      "test_blocked_benign": 0.0
+    }
+  ],
+  "latency": {
+    "latency_p50_ms": 4032.207020492933,
+    "latency_p95_ms": 4150.576693753101,
+    "latency_mean_ms": 4053.0054915012443,
+    "latency_min_ms": 4007.103541007382,
+    "latency_max_ms": 4184.144500002731,
+    "latency_n_samples": 224.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 47.53404002258321,
+    "latency_tokenize_p95_ms": 48.47373110242188,
+    "latency_infer_p50_ms": 3984.0945235046092,
+    "latency_infer_p95_ms": 4101.661105254607
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments/seed_1/S_random/context_transformer_keep_prompt",
+  "test_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/splits/S_random/test.jsonl",
+  "n_samples": 224
+}

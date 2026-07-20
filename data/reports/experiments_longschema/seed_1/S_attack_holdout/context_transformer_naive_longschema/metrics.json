@@ -1,0 +1,75 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_attack_holdout",
+  "metrics": {
+    "roc_auc": 0.45512,
+    "pr_auc": 0.5407846136742825,
+    "fpr_at_tpr_90": 0.92,
+    "fpr_at_tpr_95": 0.95,
+    "threshold_at_tpr_90": 0.45696160197257996,
+    "threshold_at_tpr_95": 0.4561479091644287,
+    "asr_before": 1.0,
+    "asr_after_90": 0.088,
+    "asr_after_95": 0.016,
+    "asr_reduction_90": 0.912,
+    "asr_reduction_95": 0.984,
+    "blocked_benign_rate_90": 0.92,
+    "blocked_benign_rate_95": 0.95,
+    "latency_p50_ms": 4456.05162550055,
+    "latency_p95_ms": 4988.389671192999,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 154.59515000111423,
+    "latency_tokenize_p95_ms": 162.2625603384222,
+    "latency_infer_p50_ms": 4298.851105006179,
+    "latency_infer_p95_ms": 4839.373811687983
+  },
+  "budget_results": [
+    {
+      "budget": 0.01,
+      "threshold": Infinity,
+      "val_fpr": 0.0,
+      "val_tpr": 0.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.0,
+      "test_asr": 1.0,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.03,
+      "threshold": Infinity,
+      "val_fpr": 0.0,
+      "val_tpr": 0.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.0,
+      "test_asr": 1.0,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.05,
+      "threshold": Infinity,
+      "val_fpr": 0.0,
+      "val_tpr": 0.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.0,
+      "test_asr": 1.0,
+      "test_blocked_benign": 0.0
+    }
+  ],
+  "latency": {
+    "latency_p50_ms": 4456.05162550055,
+    "latency_p95_ms": 4988.389671192999,
+    "latency_mean_ms": 4580.458433397871,
+    "latency_min_ms": 4358.739832998253,
+    "latency_max_ms": 5027.853583989781,
+    "latency_n_samples": 225.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 154.59515000111423,
+    "latency_tokenize_p95_ms": 162.2625603384222,
+    "latency_infer_p50_ms": 4298.851105006179,
+    "latency_infer_p95_ms": 4839.373811687983
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments_longschema/seed_1/S_attack_holdout/context_transformer_naive_longschema",
+  "test_path": "data/splits_longschema/S_attack_holdout/test.jsonl",
+  "n_samples": 225
+}

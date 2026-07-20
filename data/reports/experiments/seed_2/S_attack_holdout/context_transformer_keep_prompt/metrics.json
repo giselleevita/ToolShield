@@ -1,0 +1,75 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_attack_holdout",
+  "metrics": {
+    "roc_auc": 0.9987199999999999,
+    "pr_auc": 0.9989995327900063,
+    "fpr_at_tpr_90": 0.0,
+    "fpr_at_tpr_95": 0.01,
+    "threshold_at_tpr_90": 0.11266103386878967,
+    "threshold_at_tpr_95": 0.009819915518164635,
+    "asr_before": 1.0,
+    "asr_after_90": 0.064,
+    "asr_after_95": 0.024,
+    "asr_reduction_90": 0.9359999999999999,
+    "asr_reduction_95": 0.976,
+    "blocked_benign_rate_90": 0.0,
+    "blocked_benign_rate_95": 0.01,
+    "latency_p50_ms": 4161.115770999459,
+    "latency_p95_ms": 4190.033549847431,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 47.95514544821344,
+    "latency_tokenize_p95_ms": 48.724719948950224,
+    "latency_infer_p50_ms": 4112.920770516212,
+    "latency_infer_p95_ms": 4141.033345417236
+  },
+  "budget_results": [
+    {
+      "budget": 0.01,
+      "threshold": 0.9986562728881836,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.56,
+      "test_asr": 0.44,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.03,
+      "threshold": 0.9986562728881836,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.56,
+      "test_asr": 0.44,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.05,
+      "threshold": 0.9986562728881836,
+      "val_fpr": 0.0,
+      "val_tpr": 1.0,
+      "test_fpr": 0.0,
+      "test_tpr": 0.56,
+      "test_asr": 0.44,
+      "test_blocked_benign": 0.0
+    }
+  ],
+  "latency": {
+    "latency_p50_ms": 4161.115770999459,
+    "latency_p95_ms": 4190.033549847431,
+    "latency_mean_ms": 4117.64946259791,
+    "latency_min_ms": 3956.0761249886127,
+    "latency_max_ms": 4194.2467499902705,
+    "latency_n_samples": 225.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 47.95514544821344,
+    "latency_tokenize_p95_ms": 48.724719948950224,
+    "latency_infer_p50_ms": 4112.920770516212,
+    "latency_infer_p95_ms": 4141.033345417236
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments/seed_2/S_attack_holdout/context_transformer_keep_prompt",
+  "test_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/splits/S_attack_holdout/test.jsonl",
+  "n_samples": 225
+}

@@ -1,0 +1,75 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_random",
+  "metrics": {
+    "roc_auc": 0.9971774193548387,
+    "pr_auc": 0.9978690790941758,
+    "fpr_at_tpr_90": 0.0,
+    "fpr_at_tpr_95": 0.0,
+    "threshold_at_tpr_90": 0.09307394176721573,
+    "threshold_at_tpr_95": 0.09307394176721573,
+    "asr_before": 1.0,
+    "asr_after_90": 0.04032258064516129,
+    "asr_after_95": 0.04032258064516129,
+    "asr_reduction_90": 0.9596774193548387,
+    "asr_reduction_95": 0.9596774193548387,
+    "blocked_benign_rate_90": 0.0,
+    "blocked_benign_rate_95": 0.0,
+    "latency_p50_ms": 4562.333500500245,
+    "latency_p95_ms": 5113.285264544538,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 255.74252201477066,
+    "latency_tokenize_p95_ms": 272.8676328442816,
+    "latency_infer_p50_ms": 4311.330853495747,
+    "latency_infer_p95_ms": 4839.8349035363935
+  },
+  "budget_results": [
+    {
+      "budget": 0.01,
+      "threshold": 0.9624073505401611,
+      "val_fpr": 0.0,
+      "val_tpr": 0.984,
+      "test_fpr": 0.0,
+      "test_tpr": 0.8467741935483871,
+      "test_asr": 0.1532258064516129,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.03,
+      "threshold": 0.9624073505401611,
+      "val_fpr": 0.0,
+      "val_tpr": 0.984,
+      "test_fpr": 0.0,
+      "test_tpr": 0.8467741935483871,
+      "test_asr": 0.1532258064516129,
+      "test_blocked_benign": 0.0
+    },
+    {
+      "budget": 0.05,
+      "threshold": 0.033391814678907394,
+      "val_fpr": 0.04,
+      "val_tpr": 1.0,
+      "test_fpr": 0.01,
+      "test_tpr": 0.967741935483871,
+      "test_asr": 0.03225806451612903,
+      "test_blocked_benign": 0.01
+    }
+  ],
+  "latency": {
+    "latency_p50_ms": 4562.333500500245,
+    "latency_p95_ms": 5113.285264544538,
+    "latency_mean_ms": 4641.914437500236,
+    "latency_min_ms": 4266.955792001681,
+    "latency_max_ms": 5151.357082999311,
+    "latency_n_samples": 224.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm",
+    "latency_tokenize_p50_ms": 255.74252201477066,
+    "latency_tokenize_p95_ms": 272.8676328442816,
+    "latency_infer_p50_ms": 4311.330853495747,
+    "latency_infer_p95_ms": 4839.8349035363935
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments_longschema/seed_0/S_random/context_transformer_keep_prompt_longschema",
+  "test_path": "data/splits_longschema/S_random/test.jsonl",
+  "n_samples": 224
+}

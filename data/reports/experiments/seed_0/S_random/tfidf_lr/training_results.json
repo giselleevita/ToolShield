@@ -1,0 +1,11 @@
+{
+  "train_samples": 601,
+  "train_roc_auc": 1.0,
+  "train_pr_auc": 0.9999999999999999,
+  "vocabulary_size": 2282,
+  "val_samples": 175,
+  "val_roc_auc": 0.94656,
+  "val_pr_auc": 0.9721324194269433,
+  "val_fpr_at_tpr_90": 0.1,
+  "val_fpr_at_tpr_95": 0.1
+}

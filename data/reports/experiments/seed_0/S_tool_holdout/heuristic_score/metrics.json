@@ -1,0 +1,36 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_tool_holdout",
+  "metrics": {
+    "roc_auc": 0.7758805496602139,
+    "pr_auc": 0.886878097340345,
+    "fpr_at_tpr_90": 0.9530516431924883,
+    "fpr_at_tpr_95": 0.9530516431924883,
+    "threshold_at_tpr_90": 0.5,
+    "threshold_at_tpr_95": 0.5,
+    "asr_before": 1.0,
+    "asr_after_90": 0.0,
+    "asr_after_95": 0.0,
+    "asr_reduction_90": 1.0,
+    "asr_reduction_95": 1.0,
+    "blocked_benign_rate_90": 0.9530516431924883,
+    "blocked_benign_rate_95": 0.9530516431924883,
+    "latency_p50_ms": 3.2574374999967404,
+    "latency_p95_ms": 3.443866849556798,
+    "latency_mode": "warm"
+  },
+  "budget_results": [],
+  "latency": {
+    "latency_p50_ms": 3.2574374999967404,
+    "latency_p95_ms": 3.443866849556798,
+    "latency_mean_ms": 3.2428167993202806,
+    "latency_min_ms": 2.991125002154149,
+    "latency_max_ms": 3.4689169988268986,
+    "latency_n_samples": 432.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm"
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments/seed_0/S_tool_holdout/heuristic_score",
+  "test_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/splits/S_tool_holdout/test.jsonl",
+  "n_samples": 432
+}

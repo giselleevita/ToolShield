@@ -1,0 +1,36 @@
+{
+  "model_name": "unknown",
+  "protocol": "S_tool_holdout",
+  "metrics": {
+    "roc_auc": 0.9318284134027912,
+    "pr_auc": 0.9011936614923824,
+    "fpr_at_tpr_90": 0.16901408450704225,
+    "fpr_at_tpr_95": 0.20657276995305165,
+    "threshold_at_tpr_90": 0.578966277769292,
+    "threshold_at_tpr_95": 0.5407995561883049,
+    "asr_before": 1.0,
+    "asr_after_90": 0.0958904109589041,
+    "asr_after_95": 0.0273972602739726,
+    "asr_reduction_90": 0.904109589041096,
+    "asr_reduction_95": 0.9726027397260274,
+    "blocked_benign_rate_90": 0.16901408450704225,
+    "blocked_benign_rate_95": 0.20657276995305165,
+    "latency_p50_ms": 4.231750004692003,
+    "latency_p95_ms": 4.305635601485847,
+    "latency_mode": "warm"
+  },
+  "budget_results": [],
+  "latency": {
+    "latency_p50_ms": 4.231750004692003,
+    "latency_p95_ms": 4.305635601485847,
+    "latency_mean_ms": 4.2061876025400124,
+    "latency_min_ms": 4.013792000478134,
+    "latency_max_ms": 4.310042000724934,
+    "latency_n_samples": 432.0,
+    "latency_n_runs": 10.0,
+    "latency_mode": "warm"
+  },
+  "model_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/reports/experiments/seed_1/S_tool_holdout/tfidf_lr",
+  "test_path": "/Users/yusaf/Uni/gigi uni/ToolShield-nysmag-copy/data/splits/S_tool_holdout/test.jsonl",
+  "n_samples": 432
+}

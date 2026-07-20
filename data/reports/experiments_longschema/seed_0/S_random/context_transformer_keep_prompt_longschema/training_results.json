@@ -1,0 +1,10 @@
+{
+  "train_samples": 601,
+  "train_loss": 0.2539787992442909,
+  "train_steps": 228,
+  "val_samples": 175,
+  "val_roc_auc": 0.9993599999999999,
+  "val_pr_auc": 0.9997460237470317,
+  "val_fpr_at_tpr_90": 0.0,
+  "val_fpr_at_tpr_95": 0.0
+}
