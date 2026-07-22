@@ -95,6 +95,7 @@ def train_model(
         config = {
             "model_name": "distilroberta-base",
             "max_length": 256,
+            "seed": seed,
             "random_state": seed,
             "epochs": 1,  # Quick training for MVT
             "batch_size": 16,
@@ -105,6 +106,7 @@ def train_model(
         config = {
             "model_name": "distilroberta-base",
             "max_length": 384,
+            "seed": seed,
             "random_state": seed,
             "epochs": 1,
             "batch_size": 16,

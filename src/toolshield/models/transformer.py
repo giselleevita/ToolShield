@@ -136,7 +136,11 @@ class TransformerClassifier(BaseClassifier):
         self.num_epochs = self.config.get("num_epochs", 3)
         self.warmup_steps = self.config.get("warmup_steps", 100)
         self.weight_decay = self.config.get("weight_decay", 0.01)
-        self.seed = self.config.get("seed", 42)
+        # Accept either "seed" or "random_state" so a caller that passes the sklearn-style
+        # key (as scripts/run_experiments.py did) still varies the training seed instead of
+        # silently falling back to the default. Previously only "seed" was read, so the
+        # experiment runner's "random_state" was ignored and every seed trained identically.
+        self.seed = self.config.get("seed", self.config.get("random_state", 42))
 
         # Set seeds for reproducibility
         torch.manual_seed(self.seed)

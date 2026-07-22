@@ -28,6 +28,9 @@ The strong performance of certain models (e.g., TF-IDF + Logistic Regression) su
 
 The \texttt{S\_attack\_holdout} protocol partially addresses this concern by evaluating on a held-out attack family. However, it remains possible that shared generator artifacts persist across families, enabling generalization that may not translate to real-world attacks.
 
+\subsection{Seed propagation defect and single-seed neural results}
+The experiment runner was intended to train each model under three seeds ($0, 1, 2$) and to report the mean and standard deviation across seeds. A configuration-key mismatch --- the runner supplied the seed under the key \texttt{random\_state}, whereas the transformer and context-transformer models read the key \texttt{seed} --- caused these neural models to fall back to their default seed regardless of the requested value. Consequently, the three ``seeds'' produced identical transformer models, and the cross-seed standard deviation reported for these models is zero by construction rather than as evidence of stability. Only the deterministic \texttt{tfidf\_lr} and heuristic baselines are legitimately invariant across seeds. The defect has since been corrected (the runner now passes the \texttt{seed} key, and the models accept either key), but the neural results reported in this thesis should be interpreted as single-seed point estimates; establishing genuine multi-seed variance requires re-running the suite under the corrected configuration and is left as a reproducibility follow-up. This limitation does not affect the qualitative finding of a holdout generalization gap, which is present within each individual run, but the reported variances for the neural models must not be read as robustness across random initialisations.
+
 \section{External Validity}
 \label{subsec:external_validity}
 
