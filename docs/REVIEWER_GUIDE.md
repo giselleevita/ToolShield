@@ -1,6 +1,6 @@
 # ToolShield — Reviewer Guide
 
-**Private repository — available on request.** This guide helps recruiters and senior engineers evaluate the thesis work in about 15 minutes without running full training pipelines.
+This guide helps recruiters and senior engineers evaluate the thesis work in about 15 minutes without running full training pipelines.
 
 ## What problem it demonstrates
 
@@ -48,6 +48,6 @@ Full thesis pipeline (`make pipeline`) downloads ML deps and trains all models �
 - **Is:** Reproducible research codebase with 200+ tests and ablation tooling
 - **Is not:** A production SaaS guard; torch/transformers are research dependencies
 
-## Request access
+## Review handoff
 
-Contact via GitHub profile or portfolio site. Reviewers typically receive read access plus this guide and the main README.
+Use this guide together with the main README for a quick technical review of the repository.
