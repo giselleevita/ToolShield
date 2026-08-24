@@ -14,6 +14,12 @@ This project implements:
 3. **Baseline Models**: From rule-based heuristics to transformer classifiers
 4. **Comprehensive Metrics**: Including operational metrics like FPR@TPR and ASR reduction
 
+## Relationship to Agent Security Gate (ASG)
+
+ToolShield can be viewed as a prototype component for an **Agent Security Gate**: it evaluates a user prompt plus tool context before tool/API execution and returns a detection signal that can support an allow/block decision.
+
+It is not a complete ASG platform. The repository focuses on single-turn prompt-injection detection and long-context truncation behavior; production ASG designs would also need policy enforcement, authorization, sandboxing, monitoring, multi-turn agent controls, and deployment-specific validation.
+
 ## Quick Start
 
 ```bash
@@ -124,6 +130,23 @@ toolshield train --model tfidf_lr --split data/splits/S_random/ --output outputs
 toolshield eval --model outputs/tfidf_lr/ --test data/splits/S_random/test.jsonl
 ```
 
+## Guard API Demo
+
+ToolShield includes a FastAPI demo service that exposes the detector as a pre-execution guard endpoint:
+
+```bash
+make demo
+```
+
+The service starts on `localhost:8000` and provides:
+
+- `POST /guard`: evaluates a prompt plus optional tool context and returns `ALLOW` or `BLOCK`
+- `GET /health`: reports service and model-load status
+- Audit logging: stores request metadata and a prompt hash, not the raw prompt text
+- Optional signed decisions: set `TOOLSHIELD_SIGNING_SECRET` to attach an HMAC-SHA256 decision record
+
+This demo is intended to show how ToolShield can supply one decision signal inside an Agent Security Gate. It does not replace production authorization, sandboxing, monitoring, or policy enforcement.
+
 ## Reproducibility
 
 All random operations use fixed seeds:
@@ -156,7 +179,7 @@ make verify_longschema_results
 
 An ablation study comparing **naive right-truncation** vs. **prompt-preserving truncation**
 under enterprise-length tool schemas (~4 000 chars). This is the key experiment backing
-the thesis claim that naive tokenization silently destroys the prompt signal.
+the thesis claim that naive tokenization can silently remove the prompt signal.
 
 ### Verification Output
 

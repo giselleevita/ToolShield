@@ -11,8 +11,8 @@
 .DEFAULT_GOAL := help
 
 # Variables
-PYTHON := python
-PIP := pip
+PYTHON ?= python3
+PIP ?= $(PYTHON) -m pip
 DATA_DIR := data
 OUTPUT_DIR := outputs
 CONFIG_DIR := configs
