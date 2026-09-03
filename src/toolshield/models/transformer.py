@@ -136,7 +136,7 @@ class TransformerClassifier(BaseClassifier):
         self.num_epochs = self.config.get("num_epochs", 3)
         self.warmup_steps = self.config.get("warmup_steps", 100)
         self.weight_decay = self.config.get("weight_decay", 0.01)
-        self.seed = self.config.get("seed", 42)
+        self.seed = self.config.get("seed", self.config.get("random_state", 42))
 
         # Set seeds for reproducibility
         torch.manual_seed(self.seed)
@@ -258,7 +258,6 @@ class TransformerClassifier(BaseClassifier):
             load_best_model_at_end=bool(eval_dataset),
             metric_for_best_model="roc_auc" if eval_dataset else None,
             greater_is_better=True,
-            logging_dir=str(output_dir / "logs"),
             logging_steps=50,
             seed=self.seed,
             report_to="none",  # Disable wandb/tensorboard

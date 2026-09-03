@@ -6,7 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.0.0] — 2026-05-01
+## [1.0.0] — 2026-09-03
+
+### Changed
+- Fixed transformer seed propagation and added regression coverage.
+- Added an explicit disclosure for historical neural results affected by the seed defect.
+- Added a machine-readable, provenance-bearing results report and static explorer.
+- Updated the dependency lock to the first patched Torch 2.13 release line.
+- Added CI deployment for the GitHub Pages results explorer.
+
+## [0.9.0] — 2026-05-01
 
 ### Added
 - Synthetic dataset generator for prompt injection in tool-using LLM agents

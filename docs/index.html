@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ToolShield Results Explorer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">REPRODUCIBLE AI SECURITY</p>
+    <h1>ToolShield Results Explorer</h1>
+    <p class="lede">A static view of the committed prompt-injection benchmark. No model key, backend, tracking, or submitted prompts.</p>
+    <aside><strong>Reproducibility disclosure:</strong> published neural results used one effective training seed because of a now-fixed propagation defect. They are useful point estimates, not evidence of cross-seed stability.</aside>
+    <section class="controls">
+      <label>Protocol <select id="protocol"></select></label>
+      <label>Model <select id="model"></select></label>
+    </section>
+    <section id="metrics" class="grid" aria-live="polite"></section>
+    <section>
+      <h2>What the protocols test</h2>
+      <dl>
+        <dt>S_random</dt><dd>Familiar attack and tool patterns.</dd>
+        <dt>S_attack_holdout</dt><dd>Generalization to an unseen attack family.</dd>
+        <dt>S_tool_holdout</dt><dd>Generalization to an unseen tool.</dd>
+      </dl>
+    </section>
+    <footer><a href="https://github.com/giselleevita/ToolShield">Source and reproduction guide</a> · <a href="https://github.com/giselleevita/agent-security-gate">Agent Security Gate enforcement demo</a></footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

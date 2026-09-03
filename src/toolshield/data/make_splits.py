@@ -367,18 +367,19 @@ def create_splits(
     Raises:
         ValueError: If unknown protocol is specified.
     """
-    # Convert dicts to DatasetRecord if needed
-    if records and isinstance(records[0], dict):
-        records = _records_to_objects(records)
+    normalized_records = [
+        record if isinstance(record, DatasetRecord) else DatasetRecord(**record)
+        for record in records
+    ]
 
     protocol_str = protocol.value if isinstance(protocol, SplitProtocol) else protocol
 
     if protocol_str == SplitProtocol.S_RANDOM.value:
-        return split_s_random(records, seed=seed)  # type: ignore
+        return split_s_random(normalized_records, seed=seed)
     elif protocol_str == SplitProtocol.S_ATTACK_HOLDOUT.value:
-        return split_s_attack_holdout(records, seed=seed)  # type: ignore
+        return split_s_attack_holdout(normalized_records, seed=seed)
     elif protocol_str == SplitProtocol.S_TOOL_HOLDOUT.value:
-        return split_s_tool_holdout(records, seed=seed)  # type: ignore
+        return split_s_tool_holdout(normalized_records, seed=seed)
     else:
         raise ValueError(
             f"Unknown protocol: {protocol}. Available: {[p.value for p in SplitProtocol]}"

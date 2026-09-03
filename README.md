@@ -3,6 +3,10 @@
 A research-grade repository for detecting prompt injection attacks in tool-using LLM agents.
 Developed for bachelor's thesis research on LLM security.
 
+**[Explore the committed benchmark results](https://giselleevita.github.io/ToolShield/)** · **[Five-minute reviewer guide](docs/REVIEWER_GUIDE.md)**
+
+> **Results disclosure:** the committed neural-model results used one effective training seed because an experiment-runner key did not reach the model. The defect is fixed and regression-tested; those figures remain labelled as point estimates until the full multi-seed run is repeated. Classical-model seed runs were independent.
+
 **Reviewers:** see [docs/REVIEWER_GUIDE.md](docs/REVIEWER_GUIDE.md) for a 15-minute evaluation path.
 
 ## Overview
@@ -19,6 +23,23 @@ This project implements:
 ToolShield can be viewed as a prototype component for an **Agent Security Gate**: it evaluates a user prompt plus tool context before tool/API execution and returns a detection signal that can support an allow/block decision.
 
 It is not a complete ASG platform. The repository focuses on single-turn prompt-injection detection and long-context truncation behavior; production ASG designs would also need policy enforcement, authorization, sandboxing, monitoring, multi-turn agent controls, and deployment-specific validation.
+
+ToolShield **measures detector behavior**. [Agent Security Gate](https://github.com/giselleevita/agent-security-gate) demonstrates how a separately governed service can **enforce** policy before a tool call.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    T[Versioned templates] --> D[Deterministic dataset]
+    D --> S[Leakage-safe split protocols]
+    S --> M[Heuristic / TF-IDF / transformer models]
+    M --> E[Evaluation + operational metrics]
+    E --> R[Machine-readable report]
+    R --> X[Static results explorer]
+    M --> G[Guard API demo]
+```
+
+The benchmark CLI, guard API, and results explorer are deliberately separable. The public explorer is static and never receives prompts.
 
 ## Quick Start
 

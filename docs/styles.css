@@ -1,0 +1,15 @@
+:root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background:#07111f; color:#e8f1ff; }
+body { margin:0; background:radial-gradient(circle at top right,#17335b,#07111f 45%); }
+main { max-width:960px; margin:auto; padding:64px 24px; }
+.eyebrow { color:#68d5ff; font-weight:800; letter-spacing:.16em; }
+h1 { font-size:clamp(2.5rem,7vw,5.5rem); line-height:.95; margin:.25em 0; }
+.lede { max-width:700px; color:#bbcae0; font-size:1.2rem; }
+aside { border-left:4px solid #ffbf69; background:#182436; padding:18px; margin:32px 0; }
+.controls { display:flex; gap:18px; flex-wrap:wrap; margin:30px 0; }
+label { display:grid; gap:8px; color:#bbcae0; }
+select { min-width:240px; padding:10px; color:inherit; background:#101d30; border:1px solid #3b5577; border-radius:8px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+.card { padding:20px; border:1px solid #28415f; border-radius:14px; background:#0d1b2e; }
+.value { display:block; font-size:2rem; font-weight:800; color:#7ce7bf; }
+dt { font-weight:800; color:#68d5ff; } dd { margin:4px 0 18px; color:#bbcae0; }
+a { color:#68d5ff; } footer { margin-top:48px; color:#8fa4bf; }
