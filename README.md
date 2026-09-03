@@ -162,6 +162,10 @@ make demo
 The service starts on `localhost:8000` and provides:
 
 - `POST /guard`: evaluates a prompt plus optional tool context and returns `ALLOW` or `BLOCK`
+- `POST /policy/evaluate`: converts a detector score into `ALLOW`, `REVIEW`, or `BLOCK`
+  using a versioned risk policy. Write and privileged tools receive stricter thresholds;
+  missing or invalid scores fail closed. Every response carries the deterministic policy hash
+  needed to reconstruct the decision.
 - `GET /health`: reports service and model-load status
 - Audit logging: stores request metadata and a prompt hash, not the raw prompt text
 - Optional signed decisions: set `TOOLSHIELD_SIGNING_SECRET` to attach an HMAC-SHA256 decision record

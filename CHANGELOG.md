@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 - 2026-09-03
+
+- Added a deterministic, risk-aware enforcement policy with explicit human-review band.
+- Added fail-closed handling and reproducible policy configuration hashes.
+- Exposed policy evaluation separately from detector inference to demonstrate a clean enforcement boundary.
+
 All notable changes to ToolShield are documented here.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).

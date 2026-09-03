@@ -26,6 +26,7 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from toolshield.guard.policy import ToolRisk, evaluate_policy
 from toolshield.guard.signing import GuardSigner, SignedDecisionRecord
 from toolshield.models.base import BaseClassifier
 
@@ -86,6 +87,22 @@ class GuardResponse(BaseModel):
     explanation: str
     latency_ms: float
     signed_decision: SignedDecisionRecord | None = None
+
+
+class PolicyRequest(BaseModel):
+    """Evaluate a detector score against a risk-aware execution policy."""
+
+    score: float | None = Field(default=None)
+    tool_risk: ToolRisk = Field(default="read")
+
+
+class PolicyResponse(BaseModel):
+    decision: Literal["ALLOW", "REVIEW", "BLOCK"]
+    effective_threshold: float
+    review_threshold: float
+    policy_version: str
+    policy_hash: str
+    reasons: list[str]
 
 
 class AuditEntry(BaseModel):
@@ -254,7 +271,7 @@ async def _lifespan(application: FastAPI) -> AsyncIterator[None]:  # noqa: ARG00
 app = FastAPI(
     title="ToolShield Guard API",
     description="Prompt injection detection for tool-using LLM agents",
-    version="0.1.0",
+    version="1.1.0",
     lifespan=_lifespan,
 )
 
@@ -264,10 +281,11 @@ async def root() -> dict[str, Any]:
     """Root endpoint with API info."""
     return {
         "service": "ToolShield Guard API",
-        "version": "0.1.0",
+        "version": "1.1.0",
         "endpoints": {
             "/guard": "POST - Evaluate a prompt for injection",
             "/health": "GET - Health check",
+            "/policy/evaluate": "POST - Convert a detector score into a risk-aware execution decision",
         },
     }
 
@@ -385,6 +403,20 @@ async def guard(request: GuardRequest) -> GuardResponse:
         explanation=explanation,
         latency_ms=round(latency_ms, 2),
         signed_decision=signed_decision,
+    )
+
+
+@app.post("/policy/evaluate", response_model=PolicyResponse)
+async def policy_evaluate(request: PolicyRequest) -> PolicyResponse:
+    """Demonstrate the boundary between detector evaluation and enforcement."""
+    result = evaluate_policy(request.score, tool_risk=request.tool_risk)
+    return PolicyResponse(
+        decision=result.decision,
+        effective_threshold=result.effective_threshold,
+        review_threshold=result.review_threshold,
+        policy_version=result.policy_version,
+        policy_hash=result.policy_hash,
+        reasons=list(result.reasons),
     )
 
 
