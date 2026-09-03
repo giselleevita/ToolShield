@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import platform
 import subprocess
 from pathlib import Path
@@ -17,6 +18,21 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def json_safe(value: object) -> object:
+    """Replace non-finite experiment values with JSON null.
+
+    Python's encoder otherwise emits NaN, which is not valid JSON and breaks the
+    browser explorer. Missing measurements are intentionally represented as null.
+    """
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [json_safe(item) for item in value]
+    return value
+
+
 def main() -> None:
     source = json.loads(SOURCE.read_text())
     config_files = sorted((ROOT / "configs").rglob("*.yaml"))
@@ -27,18 +43,23 @@ def main() -> None:
     ).stdout.strip()
     results = []
     for row in source["summary"]:
-        item = dict(row)
+        item = json_safe(dict(row))
+        assert isinstance(item, dict)
         item["seed_status"] = (
             "effective single seed" if "transformer" in item["model"] else "independent seeds"
         )
         results.append(item)
     report = {
-        "schema_version": "1.0.0",
+        "schema_version": "1.1.0",
         "source": "synthetic ToolShield benchmark",
         "source_license": "MIT",
         "dataset_provenance": "Deterministically generated from versioned templates; no user data.",
         "commit": commit,
         "configuration_sha256": config_hash,
+        "source_artifacts_sha256": {
+            str(path.relative_to(ROOT)): sha256(path)
+            for path in sorted((ROOT / "data/reports/experiments").glob("*.csv")) + [SOURCE]
+        },
         "split_sha256": {str(p.relative_to(ROOT)): sha256(p) for p in split_files},
         "environment": {"python": platform.python_version(), "platform": platform.platform()},
         "limitations": [
@@ -47,7 +68,7 @@ def main() -> None:
         ],
         "results": results,
     }
-    OUTPUT.write_text(json.dumps(report, indent=2) + "\n")
+    OUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
 
 
 if __name__ == "__main__":

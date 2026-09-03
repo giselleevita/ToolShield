@@ -1,5 +1,8 @@
 const fmt = (value) => value == null ? "Not reported" : `${(value * 100).toFixed(1)}%`;
-fetch("results.json").then(r => r.json()).then(report => {
+fetch("results.json").then(r => {
+  if (!r.ok) throw new Error(`Results request failed (${r.status})`);
+  return r.json();
+}).then(report => {
   const protocols = [...new Set(report.results.map(r => r.protocol))];
   const models = [...new Set(report.results.map(r => r.model))];
   const protocol = document.querySelector("#protocol");
@@ -16,4 +19,6 @@ fetch("results.json").then(r => r.json()).then(report => {
     document.querySelector("#metrics").innerHTML = fields.map(([k,v]) => `<div class="card"><span class="value">${v}</span>${k}</div>`).join("");
   };
   protocol.onchange = render; model.onchange = render; render();
+}).catch(error => {
+  document.querySelector("#metrics").innerHTML = `<div class="card"><span class="value">Unavailable</span>${error.message}</div>`;
 });

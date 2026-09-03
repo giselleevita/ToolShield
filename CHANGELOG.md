@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 - 2026-09-03
+
+- Emit strict JSON from the static benchmark report, representing unavailable measurements as `null` rather than non-standard `NaN`.
+- Add checksums for committed source metrics and validate protocol coverage, uniqueness, and checksums before Pages deployment.
+- Show an explicit explorer error instead of a blank page when report loading fails.
+
 ## 1.1.0 - 2026-09-03
 
 - Added a deterministic, risk-aware enforcement policy with explicit human-review band.
