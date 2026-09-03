@@ -147,7 +147,7 @@ narwhals==2.25.0
     # via scikit-learn
 networkx==3.6.1
     # via torch
-numpy==2.4.6
+numpy==2.3.5
     # via
     #   contourpy
     #   datasets
