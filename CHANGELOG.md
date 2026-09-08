@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 - 2026-09-08
+
+- Add protocol-wide model comparison charts to the static results explorer.
+- Add an interactive read/write/privileged enforcement-policy simulator.
+- Display experiment, split, configuration, and policy provenance directly in the demo.
+- Keep the demo fully static with no cold start, submitted prompts, model key, or backend.
+
 ## 1.1.1 - 2026-09-03
 
 - Emit strict JSON from the static benchmark report, representing unavailable measurements as `null` rather than non-standard `NaN`.

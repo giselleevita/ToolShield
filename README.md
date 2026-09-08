@@ -9,6 +9,8 @@ Developed for bachelor's thesis research on LLM security.
 
 **Reviewers:** see [docs/REVIEWER_GUIDE.md](docs/REVIEWER_GUIDE.md) for a 15-minute evaluation path.
 
+For a concise interactive walkthrough, use [the three-minute demo](docs/RECRUITER_DEMO.md).
+
 ## Overview
 
 This project implements:

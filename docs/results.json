@@ -1,9 +1,9 @@
 {
-  "schema_version": "1.1.0",
+  "schema_version": "1.2.0",
   "source": "synthetic ToolShield benchmark",
   "source_license": "MIT",
   "dataset_provenance": "Deterministically generated from versioned templates; no user data.",
-  "commit": "6e2f942c54d9c7b7efe071aa3fdd14368eb3c81b",
+  "commit": "042d6f293c0c6fd2b7a35c0a62f6b72104539d22",
   "configuration_sha256": "18833706117b3d72b768a5b71f3679c18e8223cf4f8f1a9508cf9730109df54c",
   "source_artifacts_sha256": {
     "data/reports/experiments/raw_results.csv": "2d7d1206beba35efe85cde80430527afc9f59a16cd2b11e462af8dce23b79548",
@@ -21,6 +21,20 @@
   "environment": {
     "python": "3.14.6",
     "platform": "Darwin-25.2.0-arm64-arm-64bit-Mach-O"
+  },
+  "enforcement_policy": {
+    "version": "1.0.0",
+    "block_threshold": 0.7,
+    "review_margin": 0.15,
+    "write_adjustment": 0.1,
+    "privileged_adjustment": 0.2,
+    "fail_closed": true,
+    "configuration_sha256": "3c2a4baa3aac530b1920a24a5a9ba3a34e5e59ae16e2ca4f84df1ebfd8e0b74c",
+    "tool_risks": [
+      "read",
+      "write",
+      "privileged"
+    ]
   },
   "limitations": [
     "Neural-model cross-seed variance is not established for the committed results.",

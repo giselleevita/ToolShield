@@ -18,6 +18,28 @@
     </section>
     <section id="metrics" class="grid" aria-live="polite"></section>
     <section>
+      <div class="section-heading">
+        <div><p class="eyebrow">GENERALIZATION PROFILE</p><h2>How models compare</h2></div>
+        <p>ROC-AUC for the selected protocol. The tool-holdout view exposes the harder unseen-tool case.</p>
+      </div>
+      <div id="comparison" class="chart" aria-live="polite"></div>
+    </section>
+    <section>
+      <div class="section-heading">
+        <div><p class="eyebrow">DETECTOR → ENFORCEMENT</p><h2>Risk-aware decision simulator</h2></div>
+        <p>The same detector score can be acceptable for a read operation and blocked for a privileged action.</p>
+      </div>
+      <label class="score-control">Detector score <output id="scoreValue">0.55</output>
+        <input id="score" type="range" min="0" max="1" step="0.01" value="0.55">
+      </label>
+      <div id="policy" class="policy-grid" aria-live="polite"></div>
+    </section>
+    <section class="provenance">
+      <p class="eyebrow">REPRODUCIBILITY PROVENANCE</p>
+      <h2>Evidence fingerprints</h2>
+      <dl id="provenance"></dl>
+    </section>
+    <section>
       <h2>What the protocols test</h2>
       <dl>
         <dt>S_random</dt><dd>Familiar attack and tool patterns.</dd>
@@ -25,7 +47,7 @@
         <dt>S_tool_holdout</dt><dd>Generalization to an unseen tool.</dd>
       </dl>
     </section>
-    <footer><a href="https://github.com/giselleevita/ToolShield">Source and reproduction guide</a> · <a href="https://github.com/giselleevita/agent-security-gate">Agent Security Gate enforcement demo</a></footer>
+    <footer><a href="https://github.com/giselleevita/ToolShield">Source and reproduction guide</a> · <a href="https://github.com/giselleevita/agent-security-gate">Agent Security Gate enforcement demo</a><br><span>Static demo: no cold start, model key, backend, tracking, or prompt collection.</span></footer>
   </main>
   <script src="app.js"></script>
 </body>
