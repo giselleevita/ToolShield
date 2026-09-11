@@ -25,6 +25,8 @@ jobs:
       - uses: actions/checkout@v6
       - name: Validate machine-readable report
         run: python scripts/validate_public_report.py
+      - name: Validate static explorer contract
+        run: python scripts/validate_explorer.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

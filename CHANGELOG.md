@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 - 2026-09-11
+
+- Add a fail-closed contract check between the static explorer markup and JavaScript.
+- Reject third-party runtime scripts and missing provenance, limitations, or key-free-demo disclosures during deployment.
+
 ## 1.2.0 - 2026-09-08
 
 - Add protocol-wide model comparison charts to the static results explorer.

@@ -11,6 +11,8 @@ Developed for bachelor's thesis research on LLM security.
 
 For a concise interactive walkthrough, use [the three-minute demo](docs/RECRUITER_DEMO.md).
 
+The Pages deployment fails closed if the explorer references missing UI elements, loads third-party runtime scripts, or omits its provenance, limitations, and key-free-demo disclosures.
+
 ## Overview
 
 This project implements:

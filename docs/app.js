@@ -46,6 +46,9 @@ fetch("results.json").then(r => {
     ["Policy", `${report.enforcement_policy.version} · ${shortHash(report.enforcement_policy.configuration_sha256)}`],
     ["Verified split files", String(Object.keys(report.split_sha256).length)],
   ].map(([key,value]) => `<div><dt>${key}</dt><dd><code>${value}</code></dd></div>`).join("");
+  document.querySelector("#limitations").innerHTML = report.limitations
+    .map(limitation => `<li>${limitation}</li>`)
+    .join("");
   protocol.onchange = () => { syncModels(); render(); };
   model.onchange = render;
   document.querySelector("#score").oninput = renderPolicy;
