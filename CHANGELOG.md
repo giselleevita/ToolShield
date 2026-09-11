@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.2 - 2026-09-11
+
+- Add a 90-second recruiter walkthrough and interview discussion prompts.
+
 ## 1.2.1 - 2026-09-11
 
 - Add a fail-closed contract check between the static explorer markup and JavaScript.

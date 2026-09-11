@@ -9,7 +9,7 @@ Developed for bachelor's thesis research on LLM security.
 
 **Reviewers:** see [docs/REVIEWER_GUIDE.md](docs/REVIEWER_GUIDE.md) for a 15-minute evaluation path.
 
-For a concise interactive walkthrough, use [the three-minute demo](docs/RECRUITER_DEMO.md).
+For a concise interactive walkthrough, use the [90-second demo](docs/90_SECOND_DEMO.md) or [three-minute reviewer path](docs/RECRUITER_DEMO.md).
 
 The Pages deployment fails closed if the explorer references missing UI elements, loads third-party runtime scripts, or omits its provenance, limitations, and key-free-demo disclosures.
 
