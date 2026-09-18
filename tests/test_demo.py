@@ -10,6 +10,7 @@ These tests verify:
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from toolshield.demo.app import (
     _generate_explanation,
     _get_threshold,
     _hash_prompt,
+    _write_audit_entry,
 )
 
 
@@ -223,6 +225,33 @@ class TestAuditEntry:
         assert data["audit_id"] == "test123"
         assert "prompt" not in data  # Should not contain raw prompt
 
+    def test_concurrent_appends_remain_valid_json_lines(self, tmp_path: Path) -> None:
+        audit_path = tmp_path / "audit.jsonl"
+
+        def write(index: int) -> None:
+            _write_audit_entry(
+                AuditEntry(
+                    audit_id=f"id-{index}",
+                    timestamp="2026-09-18T00:00:00Z",
+                    prompt_hash=f"hash-{index}",
+                    tool_name=None,
+                    role_sequence=None,
+                    fpr_budget=0.03,
+                    score=0.1,
+                    threshold=0.5,
+                    decision="ALLOW",
+                    latency_ms=1.0,
+                ),
+                str(audit_path),
+            )
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            list(executor.map(write, range(100)))
+
+        rows = [json.loads(line) for line in audit_path.read_text().splitlines()]
+        assert len(rows) == 100
+        assert audit_path.stat().st_mode & 0o077 == 0
+
 
 class TestGuardEndpointIntegration:
     """Integration tests for the guard endpoint.
@@ -257,7 +286,57 @@ class TestGuardEndpointIntegration:
         assert response.status_code == 200
         data = response.json()
         assert "status" in data
-        assert data["status"] == "healthy"
+        assert data["status"] == "alive"
+
+    def test_readiness_fails_when_model_is_unavailable(self, client, monkeypatch) -> None:
+        from toolshield.demo import app as demo_app
+
+        def unavailable(_path: str):
+            raise FileNotFoundError("missing")
+
+        monkeypatch.setattr(demo_app, "_load_model", unavailable)
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert response.json()["detail"] == "Model is not ready"
+
+    def test_configure_is_hidden_when_admin_key_is_unset(self, client, monkeypatch) -> None:
+        monkeypatch.delenv("TOOLSHIELD_ADMIN_KEY", raising=False)
+        assert client.post("/configure").status_code == 404
+
+    def test_configure_requires_valid_bearer_key(self, client, monkeypatch) -> None:
+        monkeypatch.setenv("TOOLSHIELD_ADMIN_KEY", "correct-key")
+        assert client.post("/configure").status_code == 401
+        response = client.post(
+            "/configure", headers={"Authorization": "Bearer correct-key"}
+        )
+        assert response.status_code == 200
+
+    def test_request_bounds_are_enforced(self, client) -> None:
+        response = client.post("/guard", json={"prompt": "x" * 32_769})
+        assert response.status_code == 422
+
+        response = client.post(
+            "/guard", json={"prompt": "hello", "tool_schema": {"value": "x" * 33_000}}
+        )
+        assert response.status_code == 422
+
+        response = client.post("/guard", json={"prompt": "hello", "fpr_budget": 0.02})
+        assert response.status_code == 422
+
+    def test_required_audit_failure_returns_503(self, client, monkeypatch) -> None:
+        from toolshield.demo import app as demo_app
+
+        class FakeModel:
+            def predict_scores(self, _records):
+                return [0.1]
+
+        monkeypatch.setattr(demo_app, "_load_model", lambda _path: FakeModel())
+        monkeypatch.setattr(
+            demo_app, "_write_audit_entry", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError())
+        )
+        monkeypatch.setenv("TOOLSHIELD_AUDIT_REQUIRED", "true")
+        response = client.post("/guard", json={"prompt": "hello"})
+        assert response.status_code == 503
 
     @pytest.mark.skipif(
         not Path("outputs/tfidf_lr/config.json").exists(), reason="Model not trained"
