@@ -9,6 +9,7 @@ These tests verify:
 
 from __future__ import annotations
 
+import importlib
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -24,6 +25,8 @@ from toolshield.demo.app import (
     _hash_prompt,
     _write_audit_entry,
 )
+
+demo_app = importlib.import_module("toolshield.demo.app")
 
 
 class TestHashPrompt:
@@ -289,8 +292,6 @@ class TestGuardEndpointIntegration:
         assert data["status"] == "alive"
 
     def test_readiness_fails_when_model_is_unavailable(self, client, monkeypatch) -> None:
-        from toolshield.demo import app as demo_app
-
         def unavailable(_path: str):
             raise FileNotFoundError("missing")
 
@@ -324,8 +325,6 @@ class TestGuardEndpointIntegration:
         assert response.status_code == 422
 
     def test_required_audit_failure_returns_503(self, client, monkeypatch) -> None:
-        from toolshield.demo import app as demo_app
-
         class FakeModel:
             def predict_scores(self, _records):
                 return [0.1]
