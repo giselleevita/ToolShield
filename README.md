@@ -170,9 +170,15 @@ The service starts on `localhost:8000` and provides:
   using a versioned risk policy. Write and privileged tools receive stricter thresholds;
   missing or invalid scores fail closed. Every response carries the deterministic policy hash
   needed to reconstruct the decision.
-- `GET /health`: reports service and model-load status
+- `GET /health`: liveness; `GET /health/ready`: returns 503 until the model can serve traffic
 - Audit logging: stores request metadata and a prompt hash, not the raw prompt text
 - Optional signed decisions: set `TOOLSHIELD_SIGNING_SECRET` to attach an HMAC-SHA256 decision record
+
+Operational controls are disabled or permissive for the local demo by default. Set
+`TOOLSHIELD_ADMIN_KEY` to enable the `/configure` endpoint and call it with
+`Authorization: Bearer <key>`. Set `TOOLSHIELD_AUDIT_REQUIRED=true` to fail requests
+when the append-only audit log cannot be written. Requests are bounded to 32,768 prompt
+characters and 32 KiB of serialized tool schema to prevent accidental resource exhaustion.
 
 This demo is intended to show how ToolShield can supply one decision signal inside an Agent Security Gate. It does not replace production authorization, sandboxing, monitoring, or policy enforcement.
 

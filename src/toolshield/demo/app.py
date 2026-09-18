@@ -13,6 +13,7 @@ Usage:
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import logging
 import os
@@ -23,8 +24,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, Request
+from pydantic import BaseModel, Field, field_validator
 
 from toolshield.guard.policy import ToolRisk, evaluate_policy
 from toolshield.guard.signing import GuardSigner, SignedDecisionRecord
@@ -37,6 +38,8 @@ logger = logging.getLogger(__name__)
 # Default paths
 DEFAULT_MODEL_PATH = os.getenv("TOOLSHIELD_MODEL_PATH", "outputs/tfidf_lr/")
 DEFAULT_AUDIT_LOG = os.getenv("TOOLSHIELD_AUDIT_LOG", "data/audit/guard_audit.jsonl")
+MAX_PROMPT_CHARS = 32_768
+MAX_SCHEMA_BYTES = 32_768
 
 # FPR budget thresholds (set via config or environment)
 DEFAULT_THRESHOLDS = {
@@ -58,14 +61,25 @@ class GuardRequest(BaseModel):
         fpr_budget: FPR budget for threshold selection (0.01, 0.03, or 0.05).
     """
 
-    prompt: str = Field(..., description="The prompt text to classify")
-    tool_name: str | None = Field(None, description="Target tool name")
-    tool_schema: dict[str, Any] | None = Field(None, description="Tool JSON schema")
-    tool_description: str | None = Field(None, description="Tool description")
-    role_sequence: list[str] | None = Field(
-        default=["system", "user"], description="Conversation role sequence"
+    prompt: str = Field(
+        ..., min_length=1, max_length=MAX_PROMPT_CHARS, description="The prompt text to classify"
     )
-    fpr_budget: float = Field(default=0.03, description="FPR budget (0.01, 0.03, or 0.05)")
+    tool_name: str | None = Field(None, max_length=128, description="Target tool name")
+    tool_schema: dict[str, Any] | None = Field(None, description="Tool JSON schema")
+    tool_description: str | None = Field(None, max_length=4096, description="Tool description")
+    role_sequence: list[str] | None = Field(
+        default=["system", "user"], max_length=32, description="Conversation role sequence"
+    )
+    fpr_budget: float = Field(
+        default=0.03, description="FPR budget (0.01, 0.03, or 0.05)"
+    )
+
+    @field_validator("fpr_budget")
+    @classmethod
+    def supported_fpr_budget(cls, value: float) -> float:
+        if value not in DEFAULT_THRESHOLDS:
+            raise ValueError("fpr_budget must be one of 0.01, 0.03, or 0.05")
+        return value
 
 
 class GuardResponse(BaseModel):
@@ -202,9 +216,33 @@ def _write_audit_entry(entry: AuditEntry, audit_path: str) -> None:
     """
     audit_file = Path(audit_path)
     audit_file.parent.mkdir(parents=True, exist_ok=True)
+    payload = (entry.model_dump_json() + "\n").encode("utf-8")
+    descriptor = os.open(audit_file, os.O_APPEND | os.O_CREAT | os.O_WRONLY, 0o600)
+    try:
+        view = memoryview(payload)
+        while view:
+            written = os.write(descriptor, view)
+            view = view[written:]
+    finally:
+        os.close(descriptor)
 
-    with audit_file.open("a") as f:
-        f.write(entry.model_dump_json() + "\n")
+
+def _env_enabled(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _require_admin(request: Request) -> None:
+    expected = os.getenv("TOOLSHIELD_ADMIN_KEY", "")
+    if not expected:
+        raise HTTPException(status_code=404, detail="Not found")
+    authorization = request.headers.get("Authorization", "")
+    scheme, _, supplied = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not supplied or not hmac.compare_digest(supplied, expected):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid admin credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 def _get_threshold(fpr_budget: float) -> float:
@@ -295,10 +333,20 @@ async def health() -> dict[str, str]:
     """Health check endpoint."""
     model_loaded = DEFAULT_MODEL_PATH in _model_cache
     return {
-        "status": "healthy",
+        "status": "alive",
         "model_loaded": str(model_loaded),
         "model_path": DEFAULT_MODEL_PATH,
     }
+
+
+@app.get("/health/ready")
+async def readiness() -> dict[str, str]:
+    """Return success only when the configured model can serve decisions."""
+    try:
+        _load_model(DEFAULT_MODEL_PATH)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Model is not ready") from exc
+    return {"status": "ready", "model_path": DEFAULT_MODEL_PATH}
 
 
 @app.post("/guard", response_model=GuardResponse)
@@ -317,6 +365,15 @@ async def guard(request: GuardRequest) -> GuardResponse:
     import time
 
     start_time = time.perf_counter()
+
+    if request.tool_schema is not None:
+        schema_size = len(
+            json.dumps(request.tool_schema, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        )
+        if schema_size > MAX_SCHEMA_BYTES:
+            raise HTTPException(status_code=422, detail="Tool schema exceeds 32768 bytes")
+    if request.role_sequence and any(len(role) > 32 for role in request.role_sequence):
+        raise HTTPException(status_code=422, detail="Role names must not exceed 32 characters")
 
     # Generate audit ID
     audit_id = str(uuid.uuid4())[:8]
@@ -379,7 +436,10 @@ async def guard(request: GuardRequest) -> GuardResponse:
     try:
         _write_audit_entry(audit_entry, DEFAULT_AUDIT_LOG)
     except Exception as e:
-        logger.warning(f"Failed to write audit log: {e}")
+        if _env_enabled("TOOLSHIELD_AUDIT_REQUIRED"):
+            logger.error("Required audit persistence failed", exc_info=True)
+            raise HTTPException(status_code=503, detail="Audit persistence unavailable") from e
+        logger.warning("Failed to write audit log: %s", e)
 
     signed_decision = _signer.sign(
         audit_id=audit_id,
@@ -422,6 +482,7 @@ async def policy_evaluate(request: PolicyRequest) -> PolicyResponse:
 
 @app.post("/configure")
 async def configure(
+    request: Request,
     thresholds: dict[float, float] | None = None,
     model_path: str | None = None,
 ) -> dict[str, Any]:
@@ -435,8 +496,12 @@ async def configure(
         Current configuration.
     """
     global _thresholds
+    _require_admin(request)
 
     if thresholds:
+        unsupported = set(thresholds) - set(DEFAULT_THRESHOLDS)
+        if unsupported or any(value < 0.0 or value > 1.0 for value in thresholds.values()):
+            raise HTTPException(status_code=422, detail="Unsupported FPR budget or threshold")
         _thresholds.update(thresholds)
         logger.info(f"Updated thresholds: {_thresholds}")
 
