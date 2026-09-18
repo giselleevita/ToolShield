@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from toolshield.guard.policy import ToolRisk, evaluate_policy
 from toolshield.guard.signing import GuardSigner, SignedDecisionRecord
@@ -70,9 +70,16 @@ class GuardRequest(BaseModel):
     role_sequence: list[str] | None = Field(
         default=["system", "user"], max_length=32, description="Conversation role sequence"
     )
-    fpr_budget: Literal[0.01, 0.03, 0.05] = Field(
+    fpr_budget: float = Field(
         default=0.03, description="FPR budget (0.01, 0.03, or 0.05)"
     )
+
+    @field_validator("fpr_budget")
+    @classmethod
+    def supported_fpr_budget(cls, value: float) -> float:
+        if value not in DEFAULT_THRESHOLDS:
+            raise ValueError("fpr_budget must be one of 0.01, 0.03, or 0.05")
+        return value
 
 
 class GuardResponse(BaseModel):
