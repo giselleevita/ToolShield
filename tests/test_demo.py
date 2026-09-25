@@ -23,6 +23,7 @@ from toolshield.demo.app import (
     _generate_explanation,
     _get_threshold,
     _hash_prompt,
+    _resolve_model_dir,
     _write_audit_entry,
 )
 
@@ -55,6 +56,44 @@ class TestHashPrompt:
         hash1 = _hash_prompt("prompt one")
         hash2 = _hash_prompt("prompt two")
         assert hash1 != hash2
+
+
+class TestModelPathBoundary:
+    def test_accepts_model_inside_configured_root(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        root = tmp_path / "models"
+        model_dir = root / "approved"
+        model_dir.mkdir(parents=True)
+        monkeypatch.setattr(demo_app, "MODEL_ROOT", root)
+
+        assert _resolve_model_dir("approved") == model_dir
+
+    def test_rejects_model_outside_configured_root(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        root = tmp_path / "models"
+        root.mkdir()
+        monkeypatch.setattr(demo_app, "MODEL_ROOT", root)
+
+        with pytest.raises(ValueError, match="TOOLSHIELD_MODEL_ROOT"):
+            _resolve_model_dir("../untrusted")
+
+        with pytest.raises(ValueError, match="relative"):
+            _resolve_model_dir(str(root / "approved"))
+
+    def test_rejects_symlink_escape(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        root = tmp_path / "models"
+        outside = tmp_path / "outside"
+        root.mkdir()
+        outside.mkdir()
+        (root / "escape").symlink_to(outside, target_is_directory=True)
+        monkeypatch.setattr(demo_app, "MODEL_ROOT", root)
+
+        with pytest.raises(ValueError, match="TOOLSHIELD_MODEL_ROOT"):
+            _resolve_model_dir("escape")
 
 
 class TestGetThreshold:
