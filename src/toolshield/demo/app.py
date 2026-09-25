@@ -36,7 +36,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Default paths
-DEFAULT_MODEL_PATH = os.getenv("TOOLSHIELD_MODEL_PATH", "outputs/tfidf_lr/")
+DEFAULT_MODEL_PATH = os.getenv("TOOLSHIELD_MODEL_PATH", "tfidf_lr")
+MODEL_ROOT = Path(os.getenv("TOOLSHIELD_MODEL_ROOT", "outputs"))
 DEFAULT_AUDIT_LOG = os.getenv("TOOLSHIELD_AUDIT_LOG", "data/audit/guard_audit.jsonl")
 MAX_PROMPT_CHARS = 32_768
 MAX_SCHEMA_BYTES = 32_768
@@ -155,6 +156,20 @@ def _hash_prompt(prompt: str) -> str:
     return hashlib.sha256(prompt.encode()).hexdigest()[:32]
 
 
+def _resolve_model_dir(model_path: str) -> Path:
+    """Resolve a model directory within the operator-configured model root."""
+    root = MODEL_ROOT.resolve(strict=False)
+    requested = Path(model_path)
+    if requested.is_absolute():
+        raise ValueError("Model path must be relative to TOOLSHIELD_MODEL_ROOT")
+    resolved = root.joinpath(requested).resolve(strict=False)
+    try:
+        resolved.relative_to(root)
+    except ValueError as exc:
+        raise ValueError("Model path must remain within TOOLSHIELD_MODEL_ROOT") from exc
+    return resolved
+
+
 def _load_model(model_path: str) -> BaseClassifier:
     """Load a model from disk, with caching.
 
@@ -166,8 +181,7 @@ def _load_model(model_path: str) -> BaseClassifier:
     """
     if model_path in _model_cache:
         return _model_cache[model_path]
-
-    model_dir = Path(model_path)
+    model_dir = _resolve_model_dir(model_path)
     config_path = model_dir / "config.json"
 
     if not config_path.exists():

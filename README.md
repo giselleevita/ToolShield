@@ -179,6 +179,11 @@ Operational controls are disabled or permissive for the local demo by default. S
 `Authorization: Bearer <key>`. Set `TOOLSHIELD_AUDIT_REQUIRED=true` to fail requests
 when the append-only audit log cannot be written. Requests are bounded to 32,768 prompt
 characters and 32 KiB of serialized tool schema to prevent accidental resource exhaustion.
+Model loading is restricted to `TOOLSHIELD_MODEL_ROOT` (`outputs` by default), including
+paths supplied to `/configure`; canonical resolution rejects parent traversal, absolute
+paths, and symlink escapes. `TOOLSHIELD_MODEL_PATH` is root-relative (`tfidf_lr` by
+default), so operators can relocate the complete artifact tree without exposing arbitrary
+filesystem reads.
 
 This demo is intended to show how ToolShield can supply one decision signal inside an Agent Security Gate. It does not replace production authorization, sandboxing, monitoring, or policy enforcement.
 
